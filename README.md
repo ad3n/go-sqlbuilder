@@ -203,6 +203,26 @@ fmt.Println(ub)
 // UPDATE users SET level = level + ? WHERE id = ?
 ```
 
+### Build `UPDATE ... FROM`
+
+`UpdateBuilder.From` emits a `FROM` clause for PostgreSQL, SQLite, and SQLServer flavors (it is ignored by other flavors). When a CTE includes tables created with `CTETable`, those table names are emitted before any explicit `From(...)` tables.
+
+```go
+ub := PostgreSQL.NewUpdateBuilder()
+ub.Update("users")
+ub.Set(ub.Assign("name", "Huan Du"))
+ub.From("people")
+ub.Where("users.person_id = people.id")
+
+sql, args := ub.Build()
+fmt.Println(sql)
+fmt.Println(args)
+
+// Output:
+// UPDATE users SET name = $1 FROM people WHERE users.person_id = people.id
+// [Huan Du]
+```
+
 Refer to the [WhereClause](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#WhereClause) examples to learn its usage.
 
 ### Build `ORDER BY` clause
