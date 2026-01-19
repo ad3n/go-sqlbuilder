@@ -15,6 +15,7 @@ const (
 	updateMarkerAfterWith
 	updateMarkerAfterUpdate
 	updateMarkerAfterSet
+	updateMarkerAfterFrom
 	updateMarkerAfterWhere
 	updateMarkerAfterOrderBy
 	updateMarkerAfterLimit
@@ -71,6 +72,7 @@ type UpdateBuilder struct {
 	cteBuilder    *CTEBuilder
 
 	tables      []string
+	fromTables  []string
 	assignments []string
 	orderByCols []string
 	order       string
@@ -137,6 +139,13 @@ func (ub *UpdateBuilder) Set(assignment ...string) *UpdateBuilder {
 func (ub *UpdateBuilder) SetMore(assignment ...string) *UpdateBuilder {
 	ub.assignments = append(ub.assignments, assignment...)
 	ub.marker = updateMarkerAfterSet
+	return ub
+}
+
+// From sets table names of FROM in UPDATE.
+func (ub *UpdateBuilder) From(table ...string) *UpdateBuilder {
+	ub.fromTables = table
+	ub.marker = updateMarkerAfterFrom
 	return ub
 }
 
@@ -336,7 +345,7 @@ func (ub *UpdateBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 			buf.WriteStringsPrefixed("INSERTED.", ub.returning, ", ")
 		}
 
-		ub.injection.WriteTo(buf, insertMarkerAfterReturning)
+		ub.injection.WriteTo(buf, updateMarkerAfterReturning)
 	}
 
 	if flavor != MySQL {
@@ -348,6 +357,20 @@ func (ub *UpdateBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 				buf.WriteLeadingString("FROM ")
 				buf.WriteStrings(cteTableNames, ", ")
 			}
+		}
+	}
+
+	if flavor == PostgreSQL || flavor == SQLite || flavor == SQLServer {
+		if len(ub.fromTables) > 0 {
+
+			if ub.cteBuilder == nil || len(ub.cteBuilder.tableNamesForFrom()) == 0 {
+				buf.WriteLeadingString("FROM ")
+			} else {
+				buf.WriteString(", ")
+			}
+
+			buf.WriteStrings(ub.fromTables, ", ")
+			ub.injection.WriteTo(buf, updateMarkerAfterFrom)
 		}
 	}
 
