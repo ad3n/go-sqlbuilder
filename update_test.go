@@ -283,3 +283,95 @@ func TestUpdateBuilderClone(t *testing.T) {
 	clone.Asc().Limit(5)
 	a.NotEqual(ub.String(), clone.String())
 }
+
+func TestUpdateBuilderFrom(t *testing.T) {
+	a := assert.New(t)
+	ub := NewUpdateBuilder()
+	ub.Update("user")
+	ub.Set(ub.Assign("name", "Huan Du"))
+	ub.From("person")
+	ub.Where(ub.Equal("id", 123))
+
+	sql, _ := ub.BuildWithFlavor(MySQL)
+	a.Equal("UPDATE user SET name = ? WHERE id = ?", sql)
+
+	sql, _ = ub.BuildWithFlavor(PostgreSQL)
+	a.Equal("UPDATE user SET name = $1 FROM person WHERE id = $2", sql)
+
+	sql, _ = ub.BuildWithFlavor(SQLite)
+	a.Equal("UPDATE user SET name = ? FROM person WHERE id = ?", sql)
+
+	sql, _ = ub.BuildWithFlavor(SQLServer)
+	a.Equal("UPDATE user SET name = @p1 FROM person WHERE id = @p2", sql)
+
+	sql, _ = ub.BuildWithFlavor(CQL)
+	a.Equal("UPDATE user SET name = ? WHERE id = ?", sql)
+
+	sql, _ = ub.BuildWithFlavor(ClickHouse)
+	a.Equal("UPDATE user SET name = ? WHERE id = ?", sql)
+
+	sql, _ = ub.BuildWithFlavor(Presto)
+	a.Equal("UPDATE user SET name = ? WHERE id = ?", sql)
+
+	// Test with no from
+	ub2 := NewUpdateBuilder()
+	ub2.Update("user")
+	ub2.Set(ub2.Assign("name", "Test"))
+	ub2.From()
+	ub2.Where(ub2.Equal("id", 1))
+
+	sql, _ = ub2.BuildWithFlavor(PostgreSQL)
+	a.Equal("UPDATE user SET name = $1 WHERE id = $2", sql)
+
+	// Test with multiple from tables
+	ub3 := NewUpdateBuilder()
+	ub3.Update("user")
+	ub3.Set(ub3.Assign("name", "Test"))
+	ub3.From("person", "company")
+	ub3.Where(ub3.Equal("id", 1))
+
+	sql, _ = ub3.BuildWithFlavor(PostgreSQL)
+	a.Equal("UPDATE user SET name = $1 FROM person, company WHERE id = $2", sql)
+
+	// Test chaining
+	ub5 := NewUpdateBuilder().Update("user").Set("status = 1").From("person").From("company")
+	sql, _ = ub5.BuildWithFlavor(PostgreSQL)
+	a.Equal("UPDATE user SET status = 1 FROM company", sql) // Last From call overwrites
+
+	// Test SQL injection after FROM
+	ub6 := NewUpdateBuilder()
+	ub6.Update("user")
+	ub6.Set(ub6.Assign("name", "Test"))
+	ub6.From("person")
+	ub6.SQL("/* comment after from */")
+	ub6.Where(ub6.Equal("id", 1))
+
+	sql, _ = ub6.BuildWithFlavor(PostgreSQL)
+	a.Equal("UPDATE user SET name = $1 FROM person /* comment after from */ WHERE id = $2", sql)
+
+	// Test with CTE (WITH clause)
+	cte := With(CTETable("temp_user").As(Select("id").From("active_users")))
+	ub7 := cte.Update("user")
+	ub7.Set(ub7.Assign("status", "active"))
+	ub7.From("person")
+	ub7.Where("user.id IN (SELECT id FROM temp_user)")
+
+	sql, _ = ub7.BuildWithFlavor(PostgreSQL)
+	a.Equal("WITH temp_user AS (SELECT id FROM active_users) UPDATE user SET status = $1 FROM temp_user, person WHERE user.id IN (SELECT id FROM temp_user)", sql)
+
+	// Test with SQLServer Returning
+	ub8 := ub.Clone().Returning("id", "name")
+	sql, _ = ub8.BuildWithFlavor(SQLServer)
+	a.Equal("UPDATE user SET name = @p1 OUTPUT INSERTED.id, INSERTED.name FROM person WHERE id = @p2", sql)
+
+	// Test with SQL injection after WHERE
+	ub9 := NewUpdateBuilder()
+	ub9.Update("user")
+	ub9.Set(ub9.Assign("name", "Test"))
+	ub9.From("person")
+	ub9.Where("user.id = person.id")
+	ub9.SQL("/* comment after where */")
+
+	sql, _ = ub9.BuildWithFlavor(PostgreSQL)
+	a.Equal("UPDATE user SET name = $1 FROM person WHERE user.id = person.id /* comment after where */", sql)
+}
