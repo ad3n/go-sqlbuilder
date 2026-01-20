@@ -149,7 +149,10 @@ func (ub *UpdateBuilder) From(table ...string) *UpdateBuilder {
 	return ub
 }
 
-// Where sets expressions of WHERE in UPDATE.
+// Where adds expressions to the WHERE clause in UPDATE.
+//
+// Multiple calls to Where will join expressions with AND.
+// To reset the WHERE clause, set the WhereClause field to nil.
 func (ub *UpdateBuilder) Where(andExpr ...string) *UpdateBuilder {
 	if len(andExpr) == 0 || estimateStringsBytes(andExpr) == 0 {
 		return ub

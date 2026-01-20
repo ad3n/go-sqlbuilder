@@ -125,7 +125,10 @@ func (db *DeleteBuilder) TableNames() []string {
 	return tableNames
 }
 
-// Where sets expressions of WHERE in DELETE.
+// Where adds expressions to the WHERE clause in DELETE.
+//
+// Multiple calls to Where will join expressions with AND.
+// To reset the WHERE clause, set the WhereClause field to nil.
 func (db *DeleteBuilder) Where(andExpr ...string) *DeleteBuilder {
 	if len(andExpr) == 0 || estimateStringsBytes(andExpr) == 0 {
 		return db

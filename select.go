@@ -205,7 +205,10 @@ func (sb *SelectBuilder) JoinWithOption(option JoinOption, table string, onExpr 
 	return sb
 }
 
-// Where sets expressions of WHERE in SELECT.
+// Where adds expressions to the WHERE clause in SELECT.
+//
+// Multiple calls to Where will join expressions with AND.
+// To reset the WHERE clause, set the WhereClause field to nil.
 func (sb *SelectBuilder) Where(andExpr ...string) *SelectBuilder {
 	if len(andExpr) == 0 || estimateStringsBytes(andExpr) == 0 {
 		return sb
