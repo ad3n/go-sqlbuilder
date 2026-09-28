@@ -3,12 +3,7 @@
 
 package sqlbuilder
 
-import (
-	"fmt"
-	"strings"
-
-	"github.com/huandu/go-clone"
-)
+import "github.com/huandu/go-clone"
 
 const (
 	insertMarkerInit injectionMarker = iota
@@ -109,8 +104,7 @@ func (isb *InsertBuilder) Select(col ...string) *SelectBuilder {
 	return sb
 }
 
-// Values adds a list of values for a row in INSERT.
-func (ib *InsertBuilder) Values(value ...interface{}) *InsertBuilder {
+func (ib *InsertBuilder) Values(value ...any) *InsertBuilder {
 	placeholders := make([]string, 0, len(value))
 
 	for _, v := range value {
@@ -141,15 +135,11 @@ func (ib *InsertBuilder) String() string {
 	return s
 }
 
-// Build returns compiled INSERT string and args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (ib *InsertBuilder) Build() (sql string, args []interface{}) {
+func (ib *InsertBuilder) Build() (sql string, args []any) {
 	return ib.BuildWithFlavor(ib.args.Flavor)
 }
 
-// BuildWithFlavor returns compiled INSERT string and args with flavor and initial args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
 	ib.injection.WriteTo(buf, insertMarkerInit)
 
@@ -162,6 +152,7 @@ func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 				buf.WriteString(" INTO ")
 				buf.WriteString(ib.table)
 			}
+
 			ib.injection.WriteTo(buf, insertMarkerAfterInsertInto)
 			if len(ib.cols) > 0 {
 				buf.WriteLeadingString("(")
@@ -172,9 +163,7 @@ func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 			}
 
 			buf.WriteLeadingString("VALUES ")
-			values := make([]string, 0, len(ib.values))
-			values = append(values, fmt.Sprintf("(%v)", strings.Join(v, ", ")))
-			buf.WriteStrings(values, ", ")
+			writeInsertRow(buf, v)
 		}
 
 		buf.WriteString(" SELECT 1 from DUAL")
@@ -216,13 +205,13 @@ func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 		ib.injection.WriteTo(buf, insertMarkerAfterSelect)
 	} else if len(ib.values) > 0 {
 		buf.WriteLeadingString("VALUES ")
-		values := make([]string, 0, len(ib.values))
+		for i, v := range ib.values {
+			if i > 0 {
+				buf.WriteString(", ")
+			}
 
-		for _, v := range ib.values {
-			values = append(values, fmt.Sprintf("(%v)", strings.Join(v, ", ")))
+			writeInsertRow(buf, v)
 		}
-
-		buf.WriteStrings(values, ", ")
 	}
 
 	ib.injection.WriteTo(buf, insertMarkerAfterValues)
@@ -239,6 +228,20 @@ func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 	return ib.args.CompileWithFlavor(buf.String(), flavor, initialArg...)
 }
 
+func writeInsertRow(buf *stringBuilder, values []string) {
+	buf.WriteString("(")
+
+	for i, value := range values {
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+
+		buf.WriteString(value)
+	}
+
+	buf.WriteString(")")
+}
+
 // SetFlavor sets the flavor of compiled sql.
 func (ib *InsertBuilder) SetFlavor(flavor Flavor) (old Flavor) {
 	old = ib.args.Flavor
@@ -251,8 +254,7 @@ func (ib *InsertBuilder) Flavor() Flavor {
 	return ib.args.Flavor
 }
 
-// Var returns a placeholder for value.
-func (ib *InsertBuilder) Var(arg interface{}) string {
+func (ib *InsertBuilder) Var(arg any) string {
 	return ib.args.Add(arg)
 }
 

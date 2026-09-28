@@ -64,7 +64,7 @@ func (sb *SelectBuilder) Clone() *SelectBuilder {
 }
 
 func init() {
-	t := reflect.TypeOf(SelectBuilder{})
+	t := reflect.TypeFor[SelectBuilder]()
 	clone.SetCustomFunc(t, func(allocator *clone.Allocator, old, new reflect.Value) {
 		cloned := allocator.CloneSlowly(old)
 		new.Set(cloned)
@@ -75,7 +75,6 @@ func init() {
 	})
 }
 
-// SelectBuilder is a builder to build SELECT.
 type SelectBuilder struct {
 	*WhereClause
 	Cond
@@ -86,16 +85,16 @@ type SelectBuilder struct {
 	cteBuilderVar string
 	cteBuilder    *CTEBuilder
 
-	distinct    bool
-	tables      []string
-	selectCols  []string
-	joinOptions []JoinOption
-	joinTables  []string
-	joinExprs   [][]string
-	havingExprs []string
-	groupByCols []string
-	orderByCols []string
-	order       string
+	distinct      bool
+	tables        []string
+	selectCols    []string
+	joinOptions   []JoinOption
+	joinTables    []string
+	joinExprs     [][]string
+	havingExprs   []string
+	groupByCols   []string
+	orderByCols   []string
+	order         string
 	limitVar      string
 	offsetVar     string
 	forWhat       string
@@ -384,15 +383,11 @@ func (sb *SelectBuilder) String() string {
 	return s
 }
 
-// Build returns compiled SELECT string and args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (sb *SelectBuilder) Build() (sql string, args []interface{}) {
+func (sb *SelectBuilder) Build() (sql string, args []any) {
 	return sb.BuildWithFlavor(sb.args.Flavor)
 }
 
-// BuildWithFlavor returns compiled SELECT string and args with flavor and initial args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
 	sb.injection.WriteTo(buf, selectMarkerInit)
 
@@ -504,10 +499,7 @@ func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 		}
 
 	case Presto:
-		// There might be a hidden constraint in Presto requiring offset to be set before limit.
-		// The select statement documentation (https://prestodb.io/docs/current/sql/select.html)
-		// puts offset before limit, and Trino, which is based on Presto, seems
-		// to require this specific order.
+
 		if len(sb.offsetVar) > 0 {
 			buf.WriteLeadingString("OFFSET ")
 			buf.WriteString(sb.offsetVar)
@@ -519,8 +511,7 @@ func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 		}
 
 	case SQLServer:
-		// If ORDER BY is not set, sort column #1 by default.
-		// It's required to make OFFSET...FETCH work.
+
 		if len(sb.orderByCols) == 0 && (len(sb.limitVar) > 0 || len(sb.offsetVar) > 0) {
 			buf.WriteLeadingString("ORDER BY 1")
 		}
@@ -559,8 +550,7 @@ func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 		}
 
 	case Informix:
-		// [SKIP N] FIRST M
-		// M must be greater than 0
+
 		if len(sb.limitVar) > 0 {
 			if len(sb.offsetVar) > 0 {
 				buf.WriteLeadingString("SKIP ")
@@ -572,7 +562,7 @@ func (sb *SelectBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 		}
 
 	case Doris:
-		// #192: Doris doesn't support ? in OFFSET and LIMIT.
+
 		if len(sb.limitVar) > 0 {
 			buf.WriteLeadingString("LIMIT ")
 			buf.WriteString(fmt.Sprint(sb.args.Value(sb.limitVar)))

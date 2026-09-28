@@ -528,49 +528,42 @@ func ExampleSelectBuilder_OrderByAsc_multiple() {
 func TestSelectBuilder_OrderByAscDesc(t *testing.T) {
 	a := assert.New(t)
 
-	// Test OrderByAsc with single column
 	sb := NewSelectBuilder()
 	sb.Select("*").From("users").OrderByAsc("name")
 	sql, _ := sb.Build()
 	a.Equal("SELECT * FROM users ORDER BY name ASC", sql)
 
-	// Test OrderByDesc with single column
 	sb = NewSelectBuilder()
 	sb.Select("*").From("users").OrderByDesc("id")
 	sql, _ = sb.Build()
 	a.Equal("SELECT * FROM users ORDER BY id DESC", sql)
 
-	// Test chaining OrderByAsc and OrderByDesc
 	sb = NewSelectBuilder()
 	sb.Select("*").From("users")
 	sb.OrderByDesc("score").OrderByAsc("name")
 	sql, _ = sb.Build()
 	a.Equal("SELECT * FROM users ORDER BY score DESC, name ASC", sql)
 
-	// Test multiple OrderByDesc calls
 	sb = NewSelectBuilder()
 	sb.Select("*").From("users")
 	sb.OrderByDesc("score").OrderByDesc("id")
 	sql, _ = sb.Build()
 	a.Equal("SELECT * FROM users ORDER BY score DESC, id DESC", sql)
 
-	// Test multiple OrderByAsc calls
 	sb = NewSelectBuilder()
 	sb.Select("*").From("users")
 	sb.OrderByAsc("name").OrderByAsc("email")
 	sql, _ = sb.Build()
 	a.Equal("SELECT * FROM users ORDER BY name ASC, email ASC", sql)
 
-	// Test mixed ordering with more complex scenario
 	sb = NewSelectBuilder()
 	sb.Select("id", "name", "score", "created_at").From("users")
 	sb.Where(sb.GreaterThan("score", 0))
 	sb.OrderByDesc("score").OrderByAsc("name").OrderByDesc("created_at")
 	sql, args := sb.Build()
 	a.Equal("SELECT id, name, score, created_at FROM users WHERE score > ? ORDER BY score DESC, name ASC, created_at DESC", sql)
-	a.Equal([]interface{}{0}, args)
+	a.Equal([]any{0}, args)
 
-	// Test that OrderByAsc/OrderByDesc work with table aliases
 	sb = NewSelectBuilder()
 	sb.Select("u.id", "u.name", "o.total").From("users u")
 	sb.Join("orders o", "u.id = o.user_id")

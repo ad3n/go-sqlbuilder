@@ -47,7 +47,7 @@ func (db *DeleteBuilder) Clone() *DeleteBuilder {
 }
 
 func init() {
-	t := reflect.TypeOf(DeleteBuilder{})
+	t := reflect.TypeFor[DeleteBuilder]()
 	clone.SetCustomFunc(t, func(allocator *clone.Allocator, old, new reflect.Value) {
 		cloned := allocator.CloneSlowly(old)
 		new.Set(cloned)
@@ -243,15 +243,11 @@ func (db *DeleteBuilder) String() string {
 	return s
 }
 
-// Build returns compiled DELETE string and args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (db *DeleteBuilder) Build() (sql string, args []interface{}) {
+func (db *DeleteBuilder) Build() (sql string, args []any) {
 	return db.BuildWithFlavor(db.args.Flavor)
 }
 
-// BuildWithFlavor returns compiled DELETE string and args with flavor and initial args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (db *DeleteBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (db *DeleteBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
 	db.injection.WriteTo(buf, deleteMarkerInit)
 

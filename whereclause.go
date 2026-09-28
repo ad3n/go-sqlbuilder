@@ -37,7 +37,7 @@ type clause struct {
 	andExprs []string
 }
 
-func (c *clause) Build(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (c *clause) Build(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	exprs := filterEmptyStrings(c.andExprs)
 
 	if len(exprs) == 0 {
@@ -58,8 +58,7 @@ type whereClauseProxy struct {
 
 var _ Builder = new(whereClauseProxy)
 
-// BuildWithFlavor builds a WHERE clause with the specified flavor and initial arguments.
-func (wc *WhereClause) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (wc *WhereClause) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	if wc == nil || len(wc.clauses) == 0 {
 		return "", nil
 	}
@@ -79,8 +78,7 @@ func (wc *WhereClause) BuildWithFlavor(flavor Flavor, initialArg ...interface{})
 	return buf.String(), args
 }
 
-// Build returns compiled WHERE clause string and args.
-func (wc *WhereClause) Build() (sql string, args []interface{}) {
+func (wc *WhereClause) Build() (sql string, args []any) {
 	return wc.BuildWithFlavor(wc.flavor)
 }
 

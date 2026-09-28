@@ -8,16 +8,11 @@ import (
 	"testing"
 )
 
-// TestClickHouseFloatLiteral verifies that ClickHouse interpolation keeps
-// float arguments typed as floats: whole numbers gain a ".0" suffix so the
-// server does not infer an integer and silently narrow a Float column, and
-// non-finite values are rendered in the lowercase form ClickHouse's parser
-// accepts. Other flavors keep the previous rendering.
 func TestClickHouseFloatLiteral(t *testing.T) {
 	cases := []struct {
 		name   string
 		flavor Flavor
-		arg    interface{}
+		arg    any
 		want   string
 	}{
 		{"float64 whole", ClickHouse, float64(1), "SELECT 1.0"},
@@ -31,7 +26,7 @@ func TestClickHouseFloatLiteral(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got, err := c.flavor.Interpolate("SELECT ?", []interface{}{c.arg})
+			got, err := c.flavor.Interpolate("SELECT ?", []any{c.arg})
 
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)

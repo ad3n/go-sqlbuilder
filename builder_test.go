@@ -43,7 +43,7 @@ func ExampleBuild() {
 
 func ExampleBuildNamed() {
 	b := BuildNamed("SELECT * FROM ${table} WHERE status IN (${status}) AND name LIKE ${name} AND created_at > ${time} AND modified_at < ${time} + 86400",
-		map[string]interface{}{
+		map[string]any{
 			"time":   sql.Named("start", 1234567890),
 			"status": List([]int{1, 2, 5}),
 			"name":   "Huan%",
@@ -94,11 +94,10 @@ func TestBuildWithPostgreSQL(t *testing.T) {
 	sb2 := PostgreSQL.NewSelectBuilder()
 	sb2.Select("col3", "col4").From("t2").Where(sb2.E("id", 4567), sb2.LE("level", 5))
 
-	// Use DefaultFlavor (MySQL) instead of PostgreSQL.
 	sql, args := Build("SELECT $1 AS col5 LEFT JOIN $0 LEFT JOIN $2", sb1, 7890, sb2).Build()
 
 	a.Equal(sql, "SELECT ? AS col5 LEFT JOIN SELECT col1, col2 FROM t1 WHERE id = ? AND level > ? LEFT JOIN SELECT col3, col4 FROM t2 WHERE id = ? AND level <= ?")
-	a.Equal(args, []interface{}{7890, 1234, 2, 4567, 5})
+	a.Equal(args, []any{7890, 1234, 2, 4567, 5})
 
 	old := DefaultFlavor
 	DefaultFlavor = PostgreSQL
@@ -109,7 +108,7 @@ func TestBuildWithPostgreSQL(t *testing.T) {
 	sql, args = Build("SELECT $1 AS col5 LEFT JOIN $0 LEFT JOIN $2", sb1, 7890, sb2).Build()
 
 	a.Equal(sql, "SELECT $1 AS col5 LEFT JOIN SELECT col1, col2 FROM t1 WHERE id = $2 AND level > $3 LEFT JOIN SELECT col3, col4 FROM t2 WHERE id = $4 AND level <= $5")
-	a.Equal(args, []interface{}{7890, 1234, 2, 4567, 5})
+	a.Equal(args, []any{7890, 1234, 2, 4567, 5})
 }
 
 func TestBuildWithCQL(t *testing.T) {
@@ -130,7 +129,7 @@ func TestBuildWithCQL(t *testing.T) {
 	sql, args := Build("BEGIN BATCH USING TIMESTAMP $0 $1; $2; APPLY BATCH;", 1481124356754405, ib1, ib2).Build()
 
 	a.Equal(sql, "BEGIN BATCH USING TIMESTAMP ? INSERT INTO t1 (col1, col2) VALUES (?, ?); INSERT INTO t2 (col3, col4) VALUES (?, ?); APPLY BATCH;")
-	a.Equal(args, []interface{}{1481124356754405, 1, 2, 3, 4})
+	a.Equal(args, []any{1481124356754405, 1, 2, 3, 4})
 }
 
 func TestBuilderGetFlavor(t *testing.T) {
@@ -142,7 +141,7 @@ func TestBuilderGetFlavor(t *testing.T) {
 	buildfBuilder := Buildf("SELECT * FROM foo WHERE id = %v", 1234)
 	a.Equal(DefaultFlavor, buildfBuilder.Flavor())
 
-	namedBuilder := Buildf("SELECT * FROM ${table} WHERE id = 1234", map[string]interface{}{
+	namedBuilder := Buildf("SELECT * FROM ${table} WHERE id = 1234", map[string]any{
 		"table": "foo",
 	})
 	a.Equal(DefaultFlavor, namedBuilder.Flavor())

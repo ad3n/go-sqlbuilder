@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-var typeOfSQLScanner = reflect.TypeOf((*sql.Scanner)(nil)).Elem()
+var typeOfSQLScanner = reflect.TypeFor[sql.Scanner]()
 
 type structFields struct {
 	noTag  *structTaggedFields
@@ -90,10 +90,9 @@ func (sfs *structFields) parse(t reflect.Type, mapper FieldMapperFunc, prefix st
 	l := t.NumField()
 	var anonymous []reflect.StructField
 
-	for i := 0; i < l; i++ {
+	for i := range l {
 		field := t.Field(i)
 
-		// Skip unexported fields that are not embedded structs.
 		if field.PkgPath != "" && !field.Anonymous {
 			continue
 		}
@@ -101,14 +100,12 @@ func (sfs *structFields) parse(t reflect.Type, mapper FieldMapperFunc, prefix st
 		if field.Anonymous {
 			ft := field.Type
 
-			// If field is an anonymous struct or pointer to struct, parse it later.
 			if shouldExpandAnonymousStructField(ft) {
 				anonymous = append(anonymous, field)
 				continue
 			}
 		}
 
-		// Parse DBTag.
 		alias, dbtag := DefaultGetAlias(&field)
 
 		if alias == "-" {
@@ -122,6 +119,7 @@ func (sfs *structFields) parse(t reflect.Type, mapper FieldMapperFunc, prefix st
 			if allowInsert {
 				sfs.addInsertField(structField)
 			}
+
 			sfs.parse(dereferencedType(field.Type), mapper, dbtag+".", appendFieldIndex(index, i), false)
 			continue
 		}
@@ -263,12 +261,11 @@ func canExpandStructType(t reflect.Type) bool {
 		return false
 	}
 
-	if dt != t && implementsScannerOrValuer(reflect.PtrTo(dt)) {
+	if dt != t && implementsScannerOrValuer(reflect.PointerTo(dt)) {
 		return false
 	}
 
-	for i := 0; i < dt.NumField(); i++ {
-		field := dt.Field(i)
+	for field := range dt.Fields() {
 		if field.PkgPath == "" || field.Anonymous {
 			return true
 		}
@@ -497,9 +494,9 @@ func getTagsFromOptParams(opts string) (tags []string) {
 }
 
 func splitTags(fieldtag string) (tags []string) {
-	parts := strings.Split(fieldtag, ",")
+	parts := strings.SplitSeq(fieldtag, ",")
 
-	for _, v := range parts {
+	for v := range parts {
 		tag := strings.TrimSpace(v)
 
 		if tag == "" {

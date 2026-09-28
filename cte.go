@@ -38,7 +38,7 @@ func (cteb *CTEBuilder) Clone() *CTEBuilder {
 }
 
 func init() {
-	t := reflect.TypeOf(CTEBuilder{})
+	t := reflect.TypeFor[CTEBuilder]()
 	clone.SetCustomFunc(t, func(allocator *clone.Allocator, old, new reflect.Value) {
 		cloned := allocator.CloneSlowly(old)
 		new.Set(cloned)
@@ -108,13 +108,11 @@ func (cteb *CTEBuilder) String() string {
 	return sql
 }
 
-// Build returns compiled CTE string and args.
-func (cteb *CTEBuilder) Build() (sql string, args []interface{}) {
+func (cteb *CTEBuilder) Build() (sql string, args []any) {
 	return cteb.BuildWithFlavor(cteb.args.Flavor)
 }
 
-// BuildWithFlavor builds a CTE with the specified flavor and initial arguments.
-func (cteb *CTEBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (cteb *CTEBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
 	cteb.injection.WriteTo(buf, cteMarkerInit)
 
@@ -123,6 +121,7 @@ func (cteb *CTEBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}
 		if cteb.recursive {
 			buf.WriteString("RECURSIVE ")
 		}
+
 		buf.WriteStrings(cteb.queryBuilderVars, ", ")
 	}
 

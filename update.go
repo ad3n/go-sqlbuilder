@@ -49,7 +49,7 @@ func (ub *UpdateBuilder) Clone() *UpdateBuilder {
 }
 
 func init() {
-	t := reflect.TypeOf(UpdateBuilder{})
+	t := reflect.TypeFor[UpdateBuilder]()
 	clone.SetCustomFunc(t, func(allocator *clone.Allocator, old, new reflect.Value) {
 		cloned := allocator.CloneSlowly(old)
 		new.Set(cloned)
@@ -177,8 +177,7 @@ func (ub *UpdateBuilder) AddWhereClause(whereClause *WhereClause) *UpdateBuilder
 	return ub
 }
 
-// Assign represents SET "field = value" in UPDATE.
-func (ub *UpdateBuilder) Assign(field string, value interface{}) string {
+func (ub *UpdateBuilder) Assign(field string, value any) string {
 	return fmt.Sprintf("%s = %s", Escape(field), ub.args.Add(value))
 }
 
@@ -194,26 +193,22 @@ func (ub *UpdateBuilder) Decr(field string) string {
 	return fmt.Sprintf("%s = %s - 1", f, f)
 }
 
-// Add represents SET "field = field + value" in UPDATE.
-func (ub *UpdateBuilder) Add(field string, value interface{}) string {
+func (ub *UpdateBuilder) Add(field string, value any) string {
 	f := Escape(field)
 	return fmt.Sprintf("%s = %s + %s", f, f, ub.args.Add(value))
 }
 
-// Sub represents SET "field = field - value" in UPDATE.
-func (ub *UpdateBuilder) Sub(field string, value interface{}) string {
+func (ub *UpdateBuilder) Sub(field string, value any) string {
 	f := Escape(field)
 	return fmt.Sprintf("%s = %s - %s", f, f, ub.args.Add(value))
 }
 
-// Mul represents SET "field = field * value" in UPDATE.
-func (ub *UpdateBuilder) Mul(field string, value interface{}) string {
+func (ub *UpdateBuilder) Mul(field string, value any) string {
 	f := Escape(field)
 	return fmt.Sprintf("%s = %s * %s", f, f, ub.args.Add(value))
 }
 
-// Div represents SET "field = field / value" in UPDATE.
-func (ub *UpdateBuilder) Div(field string, value interface{}) string {
+func (ub *UpdateBuilder) Div(field string, value any) string {
 	f := Escape(field)
 	return fmt.Sprintf("%s = %s / %s", f, f, ub.args.Add(value))
 }
@@ -299,15 +294,11 @@ func (ub *UpdateBuilder) String() string {
 	return s
 }
 
-// Build returns compiled UPDATE string and args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (ub *UpdateBuilder) Build() (sql string, args []interface{}) {
+func (ub *UpdateBuilder) Build() (sql string, args []any) {
 	return ub.BuildWithFlavor(ub.args.Flavor)
 }
 
-// BuildWithFlavor returns compiled UPDATE string and args with flavor and initial args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (ub *UpdateBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (ub *UpdateBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
 	ub.injection.WriteTo(buf, updateMarkerInit)
 
@@ -318,7 +309,7 @@ func (ub *UpdateBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 
 	switch flavor {
 	case MySQL:
-		// CTE table names should be written after UPDATE keyword in MySQL.
+
 		tableNames := ub.TableNames()
 
 		if len(tableNames) > 0 {
@@ -352,7 +343,7 @@ func (ub *UpdateBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{
 	}
 
 	if flavor != MySQL {
-		// For ISO SQL, CTE table names should be written after FROM keyword.
+
 		if ub.cteBuilder != nil {
 			cteTableNames := ub.cteBuilder.tableNamesForFrom()
 

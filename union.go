@@ -41,7 +41,7 @@ func (ub *UnionBuilder) Clone() *UnionBuilder {
 }
 
 func init() {
-	t := reflect.TypeOf(UnionBuilder{})
+	t := reflect.TypeFor[UnionBuilder]()
 	clone.SetCustomFunc(t, func(allocator *clone.Allocator, old, new reflect.Value) {
 		cloned := allocator.CloneSlowly(old)
 		new.Set(cloned)
@@ -186,15 +186,11 @@ func (ub *UnionBuilder) String() string {
 	return s
 }
 
-// Build returns compiled SELECT string and args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (ub *UnionBuilder) Build() (sql string, args []interface{}) {
+func (ub *UnionBuilder) Build() (sql string, args []any) {
 	return ub.BuildWithFlavor(ub.args.Flavor)
 }
 
-// BuildWithFlavor returns compiled SELECT string and args with flavor and initial args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (ub *UnionBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (ub *UnionBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
 	ub.injection.WriteTo(buf, unionMarkerInit)
 
@@ -279,10 +275,7 @@ func (ub *UnionBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}
 		}
 
 	case Presto:
-		// There might be a hidden constraint in Presto requiring offset to be set before limit.
-		// The select statement documentation (https://prestodb.io/docs/current/sql/select.html)
-		// puts offset before limit, and Trino, which is based on Presto, seems
-		// to require this specific order.
+
 		if len(ub.offsetVar) > 0 {
 			buf.WriteLeadingString("OFFSET ")
 			buf.WriteString(ub.offsetVar)
@@ -294,8 +287,7 @@ func (ub *UnionBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}
 		}
 
 	case SQLServer:
-		// If ORDER BY is not set, sort column #1 by default.
-		// It's required to make OFFSET...FETCH work.
+
 		if len(ub.orderByCols) == 0 && (len(ub.limitVar) > 0 || len(ub.offsetVar) > 0) {
 			buf.WriteLeadingString("ORDER BY 1")
 		}
@@ -317,7 +309,7 @@ func (ub *UnionBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}
 		}
 
 	case Oracle:
-		// It's required to make OFFSET...FETCH work.
+
 		if len(ub.offsetVar) > 0 {
 			buf.WriteLeadingString("OFFSET ")
 			buf.WriteString(ub.offsetVar)
@@ -335,8 +327,7 @@ func (ub *UnionBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}
 		}
 
 	case Informix:
-		// [SKIP N] FIRST M
-		// M must be greater than 0
+
 		if len(ub.limitVar) > 0 {
 			if len(ub.offsetVar) > 0 {
 				buf.WriteLeadingString("SKIP ")
@@ -348,7 +339,7 @@ func (ub *UnionBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}
 		}
 
 	case Doris:
-		// #192: Doris doesn't support ? in OFFSET and LIMIT.
+
 		if len(ub.limitVar) > 0 {
 			buf.WriteLeadingString("LIMIT ")
 			buf.WriteString(fmt.Sprint(ub.args.Value(ub.limitVar)))
@@ -379,8 +370,7 @@ func (ub *UnionBuilder) Flavor() Flavor {
 	return ub.args.Flavor
 }
 
-// Var returns a placeholder for value.
-func (ub *UnionBuilder) Var(arg interface{}) string {
+func (ub *UnionBuilder) Var(arg any) string {
 	return ub.args.Add(arg)
 }
 

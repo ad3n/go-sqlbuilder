@@ -20,7 +20,7 @@ func TestArgs(t *testing.T) {
 	named1 := Named("named1", "foo")
 	named2 := Named("named2", "bar")
 
-	cases := map[string][]interface{}{
+	cases := map[string][]any{
 		"abc ? def\n[123]":                   {"abc $? def", 123},
 		"abc ? def\n[456]":                   {"abc $0 def", 456},
 		"abc /* INVALID ARG $1 */ def\n[]":   {"abc $1 def", 123},
@@ -55,7 +55,6 @@ func TestArgs(t *testing.T) {
 
 	DefaultFlavor = PostgreSQL
 
-	// PostgreSQL flavor compiled sql.
 	for expected, c := range cases {
 		args := new(Args)
 
@@ -72,7 +71,6 @@ func TestArgs(t *testing.T) {
 
 	DefaultFlavor = SQLServer
 
-	// SQLServer flavor compiled sql.
 	for expected, c := range cases {
 		args := new(Args)
 
@@ -133,9 +131,25 @@ func TestArgsAdd(t *testing.T) {
 	a := assert.New(t)
 	args := &Args{}
 
-	for i := 0; i < maxPredefinedArgs*2; i++ {
+	for i := range maxPredefinedArgs * 2 {
 		actual := args.Add(i)
 		a.Equal(actual, fmt.Sprintf("$%v", i))
+	}
+}
+
+func TestArgsAddBoundariesAndLifetime(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	for _, index := range []int{0, 63, 64, 99, 100, 255, 256, 999, 1000, maxInt - 1} {
+		args := &Args{indexBase: index}
+		first := args.Add("first")
+		second := args.Add("second")
+		if first != fmt.Sprintf("$%d", index) || second != fmt.Sprintf("$%d", index+1) {
+			t.Fatalf("index %d: unexpected placeholders %q, %q", index, first, second)
+		}
+
+		if args.Value(first) != "first" || args.Value(second) != "second" {
+			t.Fatalf("index %d: placeholder no longer resolves to its value", index)
+		}
 	}
 }
 

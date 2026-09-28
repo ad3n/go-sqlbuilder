@@ -11,25 +11,24 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.13
+      - name: Check out code
+        uses: actions/checkout@v6
 
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+      - name: Set up Go 1.26
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
 
       - name: Get dependencies
-        run: |
-          go mod download
-          go get
+        run: go mod download
+
+      - name: Vet
+        run: go vet ./...
 
       - name: Test
-        run: go test -v -coverprofile=covprofile.cov ./...
+        run: go test -race -v -coverprofile=covprofile.cov ./...
 
       - name: Send coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          go get github.com/mattn/goveralls
-          go run github.com/mattn/goveralls -coverprofile=covprofile.cov -service=github
+        run: go run github.com/mattn/goveralls@latest -coverprofile=covprofile.cov -service=github

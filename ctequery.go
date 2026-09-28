@@ -42,7 +42,7 @@ func (ctetb *CTEQueryBuilder) Clone() *CTEQueryBuilder {
 }
 
 func init() {
-	t := reflect.TypeOf(CTEQueryBuilder{})
+	t := reflect.TypeFor[CTEQueryBuilder]()
 	clone.SetCustomFunc(t, func(allocator *clone.Allocator, old, new reflect.Value) {
 		cloned := allocator.CloneSlowly(old)
 		new.Set(cloned)
@@ -109,13 +109,11 @@ func (ctetb *CTEQueryBuilder) String() string {
 	return sql
 }
 
-// Build returns compiled CTE string and args.
-func (ctetb *CTEQueryBuilder) Build() (sql string, args []interface{}) {
+func (ctetb *CTEQueryBuilder) Build() (sql string, args []any) {
 	return ctetb.BuildWithFlavor(ctetb.args.Flavor)
 }
 
-// BuildWithFlavor builds a CTE with the specified flavor and initial arguments.
-func (ctetb *CTEQueryBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (ctetb *CTEQueryBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
 	ctetb.injection.WriteTo(buf, cteQueryMarkerInit)
 

@@ -104,15 +104,11 @@ func (ctb *CreateTableBuilder) String() string {
 	return s
 }
 
-// Build returns compiled CREATE TABLE string and args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (ctb *CreateTableBuilder) Build() (sql string, args []interface{}) {
+func (ctb *CreateTableBuilder) Build() (sql string, args []any) {
 	return ctb.BuildWithFlavor(ctb.args.Flavor)
 }
 
-// BuildWithFlavor returns compiled CREATE TABLE string and args with flavor and initial args.
-// They can be used in `DB#Query` of package `database/sql` directly.
-func (ctb *CreateTableBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (ctb *CreateTableBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
 	ctb.injection.WriteTo(buf, createTableMarkerInit)
 
@@ -171,8 +167,7 @@ func (ctb *CreateTableBuilder) Flavor() Flavor {
 	return ctb.args.Flavor
 }
 
-// Var returns a placeholder for value.
-func (ctb *CreateTableBuilder) Var(arg interface{}) string {
+func (ctb *CreateTableBuilder) Var(arg any) string {
 	return ctb.args.Add(arg)
 }
 

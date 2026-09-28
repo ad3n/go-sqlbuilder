@@ -35,8 +35,7 @@ func NewCond() *Cond {
 	}
 }
 
-// Equal is used to construct the expression "field = value".
-func (c *Cond) Equal(field string, value interface{}) string {
+func (c *Cond) Equal(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -50,18 +49,15 @@ func (c *Cond) Equal(field string, value interface{}) string {
 	})
 }
 
-// E is an alias of Equal.
-func (c *Cond) E(field string, value interface{}) string {
+func (c *Cond) E(field string, value any) string {
 	return c.Equal(field, value)
 }
 
-// EQ is an alias of Equal.
-func (c *Cond) EQ(field string, value interface{}) string {
+func (c *Cond) EQ(field string, value any) string {
 	return c.Equal(field, value)
 }
 
-// NotEqual is used to construct the expression "field <> value".
-func (c *Cond) NotEqual(field string, value interface{}) string {
+func (c *Cond) NotEqual(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -75,18 +71,15 @@ func (c *Cond) NotEqual(field string, value interface{}) string {
 	})
 }
 
-// NE is an alias of NotEqual.
-func (c *Cond) NE(field string, value interface{}) string {
+func (c *Cond) NE(field string, value any) string {
 	return c.NotEqual(field, value)
 }
 
-// NEQ is an alias of NotEqual.
-func (c *Cond) NEQ(field string, value interface{}) string {
+func (c *Cond) NEQ(field string, value any) string {
 	return c.NotEqual(field, value)
 }
 
-// GreaterThan is used to construct the expression "field > value".
-func (c *Cond) GreaterThan(field string, value interface{}) string {
+func (c *Cond) GreaterThan(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -100,18 +93,15 @@ func (c *Cond) GreaterThan(field string, value interface{}) string {
 	})
 }
 
-// G is an alias of GreaterThan.
-func (c *Cond) G(field string, value interface{}) string {
+func (c *Cond) G(field string, value any) string {
 	return c.GreaterThan(field, value)
 }
 
-// GT is an alias of GreaterThan.
-func (c *Cond) GT(field string, value interface{}) string {
+func (c *Cond) GT(field string, value any) string {
 	return c.GreaterThan(field, value)
 }
 
-// GreaterEqualThan is used to construct the expression "field >= value".
-func (c *Cond) GreaterEqualThan(field string, value interface{}) string {
+func (c *Cond) GreaterEqualThan(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -125,18 +115,15 @@ func (c *Cond) GreaterEqualThan(field string, value interface{}) string {
 	})
 }
 
-// GE is an alias of GreaterEqualThan.
-func (c *Cond) GE(field string, value interface{}) string {
+func (c *Cond) GE(field string, value any) string {
 	return c.GreaterEqualThan(field, value)
 }
 
-// GTE is an alias of GreaterEqualThan.
-func (c *Cond) GTE(field string, value interface{}) string {
+func (c *Cond) GTE(field string, value any) string {
 	return c.GreaterEqualThan(field, value)
 }
 
-// LessThan is used to construct the expression "field < value".
-func (c *Cond) LessThan(field string, value interface{}) string {
+func (c *Cond) LessThan(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -150,21 +137,19 @@ func (c *Cond) LessThan(field string, value interface{}) string {
 	})
 }
 
-// L is an alias of LessThan.
-func (c *Cond) L(field string, value interface{}) string {
+func (c *Cond) L(field string, value any) string {
 	return c.LessThan(field, value)
 }
 
-// LT is an alias of LessThan.
-func (c *Cond) LT(field string, value interface{}) string {
+func (c *Cond) LT(field string, value any) string {
 	return c.LessThan(field, value)
 }
 
-// LessEqualThan is used to construct the expression "field <= value".
-func (c *Cond) LessEqualThan(field string, value interface{}) string {
+func (c *Cond) LessEqualThan(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
+
 	return c.Var(condBuilder{
 		Builder: func(ctx *argsCompileContext) {
 			ctx.WriteString(field)
@@ -174,23 +159,19 @@ func (c *Cond) LessEqualThan(field string, value interface{}) string {
 	})
 }
 
-// LE is an alias of LessEqualThan.
-func (c *Cond) LE(field string, value interface{}) string {
+func (c *Cond) LE(field string, value any) string {
 	return c.LessEqualThan(field, value)
 }
 
-// LTE is an alias of LessEqualThan.
-func (c *Cond) LTE(field string, value interface{}) string {
+func (c *Cond) LTE(field string, value any) string {
 	return c.LessEqualThan(field, value)
 }
 
-// In is used to construct the expression "field IN (value...)".
-func (c *Cond) In(field string, values ...interface{}) string {
+func (c *Cond) In(field string, values ...any) string {
 	if len(field) == 0 {
 		return ""
 	}
 
-	// Empty values means "false".
 	if len(values) == 0 {
 		return "0 = 1"
 	}
@@ -205,13 +186,11 @@ func (c *Cond) In(field string, values ...interface{}) string {
 	})
 }
 
-// NotIn is used to construct the expression "field NOT IN (value...)".
-func (c *Cond) NotIn(field string, values ...interface{}) string {
+func (c *Cond) NotIn(field string, values ...any) string {
 	if len(field) == 0 {
 		return ""
 	}
 
-	// Empty values means "true".
 	if len(values) == 0 {
 		return "0 = 0"
 	}
@@ -226,8 +205,7 @@ func (c *Cond) NotIn(field string, values ...interface{}) string {
 	})
 }
 
-// Like is used to construct the expression "field LIKE value".
-func (c *Cond) Like(field string, value interface{}) string {
+func (c *Cond) Like(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -241,12 +219,7 @@ func (c *Cond) Like(field string, value interface{}) string {
 	})
 }
 
-// ILike is used to construct the expression "field ILIKE value".
-//
-// When the database system does not support the ILIKE operator,
-// the ILike method will return "LOWER(field) LIKE LOWER(value)"
-// to simulate the behavior of the ILIKE operator.
-func (c *Cond) ILike(field string, value interface{}) string {
+func (c *Cond) ILike(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -260,7 +233,7 @@ func (c *Cond) ILike(field string, value interface{}) string {
 				ctx.WriteValue(value)
 
 			default:
-				// Use LOWER to simulate ILIKE.
+
 				ctx.WriteString("LOWER(")
 				ctx.WriteString(field)
 				ctx.WriteString(") LIKE LOWER(")
@@ -271,8 +244,7 @@ func (c *Cond) ILike(field string, value interface{}) string {
 	})
 }
 
-// NotLike is used to construct the expression "field NOT LIKE value".
-func (c *Cond) NotLike(field string, value interface{}) string {
+func (c *Cond) NotLike(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -286,12 +258,7 @@ func (c *Cond) NotLike(field string, value interface{}) string {
 	})
 }
 
-// NotILike is used to construct the expression "field NOT ILIKE value".
-//
-// When the database system does not support the ILIKE operator,
-// the NotILike method will return "LOWER(field) NOT LIKE LOWER(value)"
-// to simulate the behavior of the ILIKE operator.
-func (c *Cond) NotILike(field string, value interface{}) string {
+func (c *Cond) NotILike(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -305,7 +272,7 @@ func (c *Cond) NotILike(field string, value interface{}) string {
 				ctx.WriteValue(value)
 
 			default:
-				// Use LOWER to simulate ILIKE.
+
 				ctx.WriteString("LOWER(")
 				ctx.WriteString(field)
 				ctx.WriteString(") NOT LIKE LOWER(")
@@ -343,8 +310,7 @@ func (c *Cond) IsNotNull(field string) string {
 	})
 }
 
-// Between is used to construct the expression "field BETWEEN lower AND upper".
-func (c *Cond) Between(field string, lower, upper interface{}) string {
+func (c *Cond) Between(field string, lower, upper any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -360,8 +326,7 @@ func (c *Cond) Between(field string, lower, upper interface{}) string {
 	})
 }
 
-// NotBetween is used to construct the expression "field NOT BETWEEN lower AND upper".
-func (c *Cond) NotBetween(field string, lower, upper interface{}) string {
+func (c *Cond) NotBetween(field string, lower, upper any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -444,8 +409,7 @@ func (c *Cond) Not(notExpr string) string {
 	return buf.String()
 }
 
-// Exists is used to construct the expression "EXISTS (subquery)".
-func (c *Cond) Exists(subquery interface{}) string {
+func (c *Cond) Exists(subquery any) string {
 	return c.Var(condBuilder{
 		Builder: func(ctx *argsCompileContext) {
 			ctx.WriteString("EXISTS (")
@@ -455,8 +419,7 @@ func (c *Cond) Exists(subquery interface{}) string {
 	})
 }
 
-// NotExists is used to construct the expression "NOT EXISTS (subquery)".
-func (c *Cond) NotExists(subquery interface{}) string {
+func (c *Cond) NotExists(subquery any) string {
 	return c.Var(condBuilder{
 		Builder: func(ctx *argsCompileContext) {
 			ctx.WriteString("NOT EXISTS (")
@@ -466,13 +429,11 @@ func (c *Cond) NotExists(subquery interface{}) string {
 	})
 }
 
-// Any is used to construct the expression "field op ANY (value...)".
-func (c *Cond) Any(field, op string, values ...interface{}) string {
+func (c *Cond) Any(field, op string, values ...any) string {
 	if len(field) == 0 || len(op) == 0 {
 		return ""
 	}
 
-	// Empty values means "false".
 	if len(values) == 0 {
 		return "0 = 1"
 	}
@@ -489,13 +450,11 @@ func (c *Cond) Any(field, op string, values ...interface{}) string {
 	})
 }
 
-// All is used to construct the expression "field op ALL (value...)".
-func (c *Cond) All(field, op string, values ...interface{}) string {
+func (c *Cond) All(field, op string, values ...any) string {
 	if len(field) == 0 || len(op) == 0 {
 		return ""
 	}
 
-	// Empty values means "false".
 	if len(values) == 0 {
 		return "0 = 1"
 	}
@@ -512,13 +471,11 @@ func (c *Cond) All(field, op string, values ...interface{}) string {
 	})
 }
 
-// Some is used to construct the expression "field op SOME (value...)".
-func (c *Cond) Some(field, op string, values ...interface{}) string {
+func (c *Cond) Some(field, op string, values ...any) string {
 	if len(field) == 0 || len(op) == 0 {
 		return ""
 	}
 
-	// Empty values means "false".
 	if len(values) == 0 {
 		return "0 = 1"
 	}
@@ -535,13 +492,7 @@ func (c *Cond) Some(field, op string, values ...interface{}) string {
 	})
 }
 
-// IsDistinctFrom is used to construct the expression "field IS DISTINCT FROM value".
-//
-// When the database system does not support the IS DISTINCT FROM operator,
-// the NotILike method will return "NOT field <=> value" for MySQL or a
-// "CASE ... WHEN ... ELSE ... END" expression to simulate the behavior of
-// the IS DISTINCT FROM operator.
-func (c *Cond) IsDistinctFrom(field string, value interface{}) string {
+func (c *Cond) IsDistinctFrom(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -561,11 +512,7 @@ func (c *Cond) IsDistinctFrom(field string, value interface{}) string {
 				ctx.WriteValue(value)
 
 			default:
-				// CASE
-				//     WHEN field IS NULL AND value IS NULL THEN 0
-				//     WHEN field IS NOT NULL AND value IS NOT NULL AND field = value THEN 0
-				//     ELSE 1
-				// END = 1
+
 				ctx.WriteString("CASE WHEN ")
 				ctx.WriteString(field)
 				ctx.WriteString(" IS NULL AND ")
@@ -584,13 +531,7 @@ func (c *Cond) IsDistinctFrom(field string, value interface{}) string {
 	})
 }
 
-// IsNotDistinctFrom is used to construct the expression "field IS NOT DISTINCT FROM value".
-//
-// When the database system does not support the IS NOT DISTINCT FROM operator,
-// the NotILike method will return "field <=> value" for MySQL or a
-// "CASE ... WHEN ... ELSE ... END" expression to simulate the behavior of
-// the IS NOT DISTINCT FROM operator.
-func (c *Cond) IsNotDistinctFrom(field string, value interface{}) string {
+func (c *Cond) IsNotDistinctFrom(field string, value any) string {
 	if len(field) == 0 {
 		return ""
 	}
@@ -609,11 +550,7 @@ func (c *Cond) IsNotDistinctFrom(field string, value interface{}) string {
 				ctx.WriteValue(value)
 
 			default:
-				// CASE
-				//     WHEN field IS NULL AND value IS NULL THEN 1
-				//     WHEN field IS NOT NULL AND value IS NOT NULL AND field = value THEN 1
-				//     ELSE 0
-				// END = 1
+
 				ctx.WriteString("CASE WHEN ")
 				ctx.WriteString(field)
 				ctx.WriteString(" IS NULL AND ")
@@ -632,8 +569,7 @@ func (c *Cond) IsNotDistinctFrom(field string, value interface{}) string {
 	})
 }
 
-// Var returns a placeholder for value.
-func (c *Cond) Var(value interface{}) string {
+func (c *Cond) Var(value any) string {
 	return c.Args.Add(value)
 }
 

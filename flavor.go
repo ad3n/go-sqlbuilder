@@ -73,12 +73,7 @@ func (f Flavor) String() string {
 	return "<invalid>"
 }
 
-// Interpolate parses sql returned by `Args#Compile` or `Builder`,
-// and interpolate args to replace placeholders in the sql.
-//
-// If there are some args missing in sql, e.g. the number of placeholders are larger than len(args),
-// returns ErrMissingArgs error.
-func (f Flavor) Interpolate(sql string, args []interface{}) (string, error) {
+func (f Flavor) Interpolate(sql string, args []any) (string, error) {
 	switch f {
 	case MySQL:
 		return mysqlInterpolate(sql, args...)

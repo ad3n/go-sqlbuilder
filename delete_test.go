@@ -215,7 +215,6 @@ func ExampleDeleteBuilder_Using() {
 func TestDeleteBuilderUsing(t *testing.T) {
 	a := assert.New(t)
 
-	// Single USING table
 	db := NewDeleteBuilder()
 	db.DeleteFrom("orders")
 	db.Using("customers")
@@ -224,7 +223,6 @@ func TestDeleteBuilderUsing(t *testing.T) {
 	sql, _ := db.BuildWithFlavor(PostgreSQL)
 	a.Equal("DELETE FROM orders USING customers WHERE orders.customer_id = customers.id", sql)
 
-	// Multiple USING tables
 	db2 := NewDeleteBuilder()
 	db2.DeleteFrom("orders")
 	db2.Using("customers", "products")
@@ -233,7 +231,6 @@ func TestDeleteBuilderUsing(t *testing.T) {
 	sql, _ = db2.BuildWithFlavor(PostgreSQL)
 	a.Equal("DELETE FROM orders USING customers, products WHERE orders.customer_id = customers.id AND orders.product_id = products.id", sql)
 
-	// USING with RETURNING
 	db3 := NewDeleteBuilder()
 	db3.DeleteFrom("orders")
 	db3.Using("customers")
@@ -242,9 +239,8 @@ func TestDeleteBuilderUsing(t *testing.T) {
 
 	sql, args := db3.BuildWithFlavor(PostgreSQL)
 	a.Equal("DELETE FROM orders USING customers WHERE customers.id = $1 RETURNING orders.id", sql)
-	a.Equal([]interface{}{42}, args)
+	a.Equal([]any{42}, args)
 
-	// SQL injection after USING
 	db4 := NewDeleteBuilder()
 	db4.DeleteFrom("orders")
 	db4.Using("customers")

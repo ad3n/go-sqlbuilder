@@ -7,12 +7,9 @@ import (
 	"fmt"
 )
 
-// Builder is a general SQL builder.
-// It's used by Args to create nested SQL like the `IN` expression in
-// `SELECT * FROM t1 WHERE id IN (SELECT id FROM t2)`.
 type Builder interface {
-	Build() (sql string, args []interface{})
-	BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{})
+	Build() (sql string, args []any)
+	BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any)
 	Flavor() Flavor
 }
 
@@ -23,11 +20,11 @@ type compiledBuilder struct {
 
 var _ Builder = new(compiledBuilder)
 
-func (cb *compiledBuilder) Build() (sql string, args []interface{}) {
+func (cb *compiledBuilder) Build() (sql string, args []any) {
 	return cb.args.Compile(cb.format)
 }
 
-func (cb *compiledBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (cb *compiledBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	return cb.args.CompileWithFlavor(cb.format, flavor, initialArg...)
 }
 
@@ -42,11 +39,11 @@ type flavoredBuilder struct {
 	flavor  Flavor
 }
 
-func (fb *flavoredBuilder) Build() (sql string, args []interface{}) {
+func (fb *flavoredBuilder) Build() (sql string, args []any) {
 	return fb.builder.BuildWithFlavor(fb.flavor)
 }
 
-func (fb *flavoredBuilder) BuildWithFlavor(flavor Flavor, initialArg ...interface{}) (sql string, args []interface{}) {
+func (fb *flavoredBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	return fb.builder.BuildWithFlavor(flavor, initialArg...)
 }
 
@@ -63,14 +60,11 @@ func WithFlavor(builder Builder, flavor Flavor) Builder {
 	}
 }
 
-// Buildf creates a Builder from a format string using `fmt.Sprintf`-like syntax.
-// As all arguments will be converted to a string internally, e.g. "$0",
-// only `%v` and `%s` are valid.
-func Buildf(format string, arg ...interface{}) Builder {
+func Buildf(format string, arg ...any) Builder {
 	args := &Args{
 		Flavor: DefaultFlavor,
 	}
-	vars := make([]interface{}, 0, len(arg))
+	vars := make([]any, 0, len(arg))
 
 	for _, a := range arg {
 		vars = append(vars, args.Add(a))
@@ -82,10 +76,7 @@ func Buildf(format string, arg ...interface{}) Builder {
 	}
 }
 
-// Build creates a Builder from a format string.
-// The format string uses special syntax to represent arguments.
-// See doc in `Args#Compile` for syntax details.
-func Build(format string, arg ...interface{}) Builder {
+func Build(format string, arg ...any) Builder {
 	args := &Args{
 		Flavor: DefaultFlavor,
 	}
@@ -100,9 +91,7 @@ func Build(format string, arg ...interface{}) Builder {
 	}
 }
 
-// BuildNamed creates a Builder from a format string.
-// The format string uses `${key}` to refer the value of named by key.
-func BuildNamed(format string, named map[string]interface{}) Builder {
+func BuildNamed(format string, named map[string]any) Builder {
 	args := &Args{
 		Flavor:    DefaultFlavor,
 		onlyNamed: true,

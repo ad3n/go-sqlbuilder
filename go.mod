@@ -1,6 +1,6 @@
-module github.com/huandu/go-sqlbuilder
+module github.com/ad3n/go-sqlbuilder
 
-go 1.18
+go 1.26.0
 
 require (
 	github.com/huandu/go-assert v1.1.6
@@ -9,7 +9,3 @@ require (
 )
 
 require github.com/davecgh/go-spew v1.1.1 // indirect
-
-// v1.42.0 was published with an incorrect module path
-// (github.com/webdaad/go-sqlbuilder). Do not use.
-retract v1.42.0

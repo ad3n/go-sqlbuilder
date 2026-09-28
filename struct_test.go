@@ -75,7 +75,7 @@ func TestStructUpdate(t *testing.T) {
 	sql, args := ub.Build()
 
 	a.Equal(sql, "UPDATE user SET id = ?, Name = ?, status = ?, created_at = ?")
-	a.Equal(args, []interface{}{123, "Huan Du", 2, 1234567890})
+	a.Equal(args, []any{123, "Huan Du", 2, 1234567890})
 }
 
 func TestStructUpdateForTag(t *testing.T) {
@@ -90,7 +90,7 @@ func TestStructUpdateForTag(t *testing.T) {
 	sql, args := ub.Build()
 
 	a.Equal(sql, "UPDATE user SET id = ?, Name = ?, status = ?")
-	a.Equal(args, []interface{}{123, "Huan Du", 2})
+	a.Equal(args, []any{123, "Huan Du", 2})
 }
 
 func TestStructInsertInto(t *testing.T) {
@@ -113,7 +113,7 @@ func TestStructInsertInto(t *testing.T) {
 		ID int
 	}{789}
 
-	users := []interface{}{user, user2, &fakeUser}
+	users := []any{user, user2, &fakeUser}
 
 	testInsert := map[*InsertBuilder]string{
 		userForTest.InsertInto("user", user):       "INSERT ",
@@ -130,13 +130,13 @@ func TestStructInsertInto(t *testing.T) {
 	for ib, exceptedVerb := range testInsert {
 		sql, args := ib.Build()
 		a.Equal(sql, exceptedVerb+"INTO user (id, Name, status, created_at) VALUES (?, ?, ?, ?)")
-		a.Equal(args, []interface{}{123, "Huan Du", 2, 1234567890})
+		a.Equal(args, []any{123, "Huan Du", 2, 1234567890})
 	}
 
 	for ib, exceptedVerb := range testMulitInsert {
 		sql, args := ib.Build()
 		a.Equal(sql, exceptedVerb+"INTO user (id, Name, status, created_at) VALUES (?, ?, ?, ?), (?, ?, ?, ?)")
-		a.Equal(args, []interface{}{123, "Huan Du", 2, 1234567890, 456, "Du Huan", 2, 1234567890})
+		a.Equal(args, []any{123, "Huan Du", 2, 1234567890, 456, "Du Huan", 2, 1234567890})
 	}
 }
 
@@ -160,7 +160,7 @@ func TestStructInsertIntoForTag(t *testing.T) {
 		ID int
 	}{789}
 
-	users := []interface{}{user, user2, &fakeUser}
+	users := []any{user, user2, &fakeUser}
 
 	testInsertForTag := map[*InsertBuilder]string{
 		userForTest.InsertIntoForTag("user", "important", user):       "INSERT ",
@@ -177,13 +177,13 @@ func TestStructInsertIntoForTag(t *testing.T) {
 	for ib, exceptedVerb := range testInsertForTag {
 		sql, args := ib.Build()
 		a.Equal(sql, exceptedVerb+"INTO user (id, Name, status) VALUES (?, ?, ?)")
-		a.Equal(args, []interface{}{123, "Huan Du", 2})
+		a.Equal(args, []any{123, "Huan Du", 2})
 	}
 
 	for ib, exceptedVerb := range testMulitInsertForTag {
 		sql, args := ib.Build()
 		a.Equal(sql, exceptedVerb+"INTO user (id, Name, status) VALUES (?, ?, ?), (?, ?, ?)")
-		a.Equal(args, []interface{}{123, "Huan Du", 2, 456, "Du Huan", 2})
+		a.Equal(args, []any{123, "Huan Du", 2, 456, "Du Huan", 2})
 	}
 }
 
@@ -307,15 +307,15 @@ func TestStructNestedAliasAddrValuesAndWrites(t *testing.T) {
 		Rank: 7,
 	}
 
-	a.Equal(nestedJoinRowForTest.Values(row), []interface{}{"post-1", "hello", "comment-1", "world", 7})
+	a.Equal(nestedJoinRowForTest.Values(row), []any{"post-1", "hello", "comment-1", "world", 7})
 
 	updateSQL, updateArgs := nestedJoinRowForTest.Update("joined", row).Build()
 	a.Equal(updateSQL, "UPDATE joined SET post.id = ?, post.text = ?, comment.id = ?, comment.body = ?, rank = ?")
-	a.Equal(updateArgs, []interface{}{"post-1", "hello", "comment-1", "world", 7})
+	a.Equal(updateArgs, []any{"post-1", "hello", "comment-1", "world", 7})
 
 	insertSQL, insertArgs := nestedJoinRowForTest.InsertInto("joined", row).Build()
 	a.Equal(insertSQL, "INSERT INTO joined (post, comment, rank) VALUES (?, ?, ?)")
-	a.Equal(insertArgs, []interface{}{row.Post, *row.Comment, 7})
+	a.Equal(insertArgs, []any{row.Post, *row.Comment, 7})
 
 	var scanned structNestedJoinRowForTest
 	_, _ = fmt.Sscan("post-2 newer comment-2 scanned 9", nestedJoinRowForTest.Addr(&scanned)...)
@@ -338,7 +338,7 @@ func TestStructNestedAliasAddrValuesAndWrites(t *testing.T) {
 		Post: structNestedPostForTest{ID: "post-4", Text: "nil"},
 		Rank: 13,
 	}
-	a.Equal(nestedJoinRowForTest.Values(withNilComment), []interface{}{"post-4", "nil", nil, nil, 13})
+	a.Equal(nestedJoinRowForTest.Values(withNilComment), []any{"post-4", "nil", nil, nil, 13})
 }
 
 func TestStructInsertIntoTaggedNestedFieldRemainsScalar(t *testing.T) {
@@ -365,7 +365,7 @@ func TestStructInsertIntoTaggedNestedFieldRemainsScalar(t *testing.T) {
 
 	sql, args := st.InsertInto("decs", rec).Build()
 	a.Equal(sql, "INSERT INTO decs (dec_id, liab_var, asset_vars) VALUES ($1, $2, $3)")
-	a.Equal(args, []interface{}{rec.DecID, rec.LiabVar, rec.AssetVars})
+	a.Equal(args, []any{rec.DecID, rec.LiabVar, rec.AssetVars})
 }
 
 func TestStructTaggedNestedFieldNoExpand(t *testing.T) {
@@ -390,11 +390,11 @@ func TestStructTaggedNestedFieldNoExpand(t *testing.T) {
 	a.Equal(selectSQL, "SELECT d.dec_id, d.liab_var FROM decs d")
 	a.Equal(selectArgs, nil)
 	a.Equal(st.Columns(), []string{"dec_id", "liab_var"})
-	a.Equal(st.Values(rec), []interface{}{rec.DecID, rec.LiabVar})
+	a.Equal(st.Values(rec), []any{rec.DecID, rec.LiabVar})
 
 	updateSQL, updateArgs := st.Update("decs", rec).Build()
 	a.Equal(updateSQL, "UPDATE decs SET dec_id = $1, liab_var = $2")
-	a.Equal(updateArgs, []interface{}{rec.DecID, rec.LiabVar})
+	a.Equal(updateArgs, []any{rec.DecID, rec.LiabVar})
 
 	var scanned decRec
 	addrs := st.Addr(&scanned)
@@ -431,15 +431,15 @@ func TestStructTaggedNestedFieldDisableExpand(t *testing.T) {
 	a.Equal(selectSQL, "SELECT d.dec_id, d.liab_var FROM decs d")
 	a.Equal(selectArgs, nil)
 	a.Equal(st.Columns(), []string{"dec_id", "liab_var"})
-	a.Equal(st.Values(rec), []interface{}{rec.DecID, rec.LiabVar})
+	a.Equal(st.Values(rec), []any{rec.DecID, rec.LiabVar})
 
 	updateSQL, updateArgs := st.Update("decs", rec).Build()
 	a.Equal(updateSQL, "UPDATE decs SET dec_id = $1, liab_var = $2")
-	a.Equal(updateArgs, []interface{}{rec.DecID, rec.LiabVar})
+	a.Equal(updateArgs, []any{rec.DecID, rec.LiabVar})
 
 	insertSQL, insertArgs := st.InsertInto("decs", rec).Build()
 	a.Equal(insertSQL, "INSERT INTO decs (dec_id, liab_var) VALUES ($1, $2)")
-	a.Equal(insertArgs, []interface{}{rec.DecID, rec.LiabVar})
+	a.Equal(insertArgs, []any{rec.DecID, rec.LiabVar})
 
 	var scanned decRec
 	addrs := st.Addr(&scanned)
@@ -476,15 +476,15 @@ func TestStructTaggedNestedFieldExpandOverridesNoExpand(t *testing.T) {
 	a.Equal(selectSQL, "SELECT d.dec_id, liab_var.ph, liab_var.vk FROM decs d")
 	a.Equal(selectArgs, nil)
 	a.Equal(st.Columns(), []string{"dec_id", "liab_var.ph", "liab_var.vk"})
-	a.Equal(st.Values(rec), []interface{}{rec.DecID, rec.LiabVar.ChnlPH, rec.LiabVar.ExpVK})
+	a.Equal(st.Values(rec), []any{rec.DecID, rec.LiabVar.ChnlPH, rec.LiabVar.ExpVK})
 
 	updateSQL, updateArgs := st.Update("decs", rec).Build()
 	a.Equal(updateSQL, "UPDATE decs SET dec_id = $1, liab_var.ph = $2, liab_var.vk = $3")
-	a.Equal(updateArgs, []interface{}{rec.DecID, rec.LiabVar.ChnlPH, rec.LiabVar.ExpVK})
+	a.Equal(updateArgs, []any{rec.DecID, rec.LiabVar.ChnlPH, rec.LiabVar.ExpVK})
 
 	insertSQL, insertArgs := st.InsertInto("decs", rec).Build()
 	a.Equal(insertSQL, "INSERT INTO decs (dec_id, liab_var) VALUES ($1, $2)")
-	a.Equal(insertArgs, []interface{}{rec.DecID, rec.LiabVar})
+	a.Equal(insertArgs, []any{rec.DecID, rec.LiabVar})
 
 	var scanned decRec
 	addrs := st.Addr(&scanned)
@@ -514,7 +514,7 @@ func TestStructInsertIntoAnonymousFieldHasNoPrefix(t *testing.T) {
 
 	sql, args := st.InsertInto("joined", value).Build()
 	a.Equal(sql, "INSERT INTO joined (rank, id, text) VALUES (?, ?, ?)")
-	a.Equal(args, []interface{}{7, "post-1", "hello"})
+	a.Equal(args, []any{7, "post-1", "hello"})
 }
 
 func TestStructTaggedTimeFieldRemainsScalar(t *testing.T) {
@@ -580,20 +580,20 @@ type State int
 type testDB int
 type testRows int
 
-func (db *testDB) Query(string, ...interface{}) (testRows, error) {
+func (db *testDB) Query(string, ...any) (testRows, error) {
 	rows := testRows(*db)
 	*db++
 	return rows, nil
 }
 
-func (db *testDB) Exec(query string, args ...interface{}) {
+func (db *testDB) Exec(query string, args ...any) {
 }
 
 func (rows testRows) Close() error {
 	return nil
 }
 
-func (rows testRows) Scan(dest ...interface{}) error {
+func (rows testRows) Scan(dest ...any) error {
 	switch rows {
 	case 0:
 		fmt.Sscan("1234 huandu 1", dest...)
@@ -1103,7 +1103,7 @@ func TestStructOmitEmpty(t *testing.T) {
 	}).Build()
 
 	a.Equal(sql2, "UPDATE foo SET `aa` = ?, bb = ?, cc = ?, D = ?, ee = ?")
-	a.Equal(args2, []interface{}{i, b, c, d, e})
+	a.Equal(args2, []any{i, b, c, d, e})
 }
 
 type structOmitEmptyForTag struct {
@@ -1134,7 +1134,7 @@ func TestStructOmitEmptyForTag(t *testing.T) {
 	}).Build()
 
 	a.Equal(sql2, "UPDATE foo SET `aa` = ?, bb = ?, cc = ?, ee = ?")
-	a.Equal(args2, []interface{}{i, b, c, e})
+	a.Equal(args2, []any{i, b, c, e})
 }
 
 type structOmitEmptyForMultipleTags struct {
@@ -1165,25 +1165,25 @@ func TestStructOmitEmptyForMultipleTags(t *testing.T) {
 	}).Build()
 
 	a.Equal(sql2, "UPDATE foo SET `aa` = ?")
-	a.Equal(args2, []interface{}{i})
+	a.Equal(args2, []any{i})
 
 	value1 := &structOmitEmptyForMultipleTags{
 		A: i,
 		B: &b,
 		C: 0,
 		D: nil,
-		E: false, // should be false value.
+		E: false,
 	}
 	value2 := &structOmitEmptyForMultipleTags{
 		A: i,
 		B: &b,
-		C: c, // should not be omitted as C in value1 is not empty.
+		C: c,
 		D: nil,
 		E: true,
 	}
 	sql3, args3 := st.InsertIntoForTag("foo", "patch2", value1, value2).Build()
 	a.Equal(sql3, "INSERT INTO foo (`aa`, cc) VALUES (?, ?), (?, ?)")
-	a.Equal(args3, []interface{}{i, uint16(0), i, c})
+	a.Equal(args3, []any{i, uint16(0), i, c})
 }
 
 type structWithPointers struct {
@@ -1207,7 +1207,7 @@ func TestStructWithPointers(t *testing.T) {
 	}).Build()
 
 	a.Equal(sql2, "UPDATE foo SET aa = ?, bb = ?, cc = ?")
-	a.Equal(args2, []interface{}{i, (*string)(nil), c})
+	a.Equal(args2, []any{i, (*string)(nil), c})
 }
 
 type structWithMapper struct {

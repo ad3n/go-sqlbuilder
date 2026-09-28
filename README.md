@@ -1,9 +1,9 @@
 # SQL builder for Go
 
-[![Go](https://github.com/huandu/go-sqlbuilder/workflows/Go/badge.svg)](https://github.com/huandu/go-sqlbuilder/actions)
-[![GoDoc](https://godoc.org/github.com/huandu/go-sqlbuilder?status.svg)](https://pkg.go.dev/github.com/huandu/go-sqlbuilder)
-[![Go Report](https://goreportcard.com/badge/github.com/huandu/go-sqlbuilder)](https://goreportcard.com/report/github.com/huandu/go-sqlbuilder)
-[![Coverage Status](https://coveralls.io/repos/github/huandu/go-sqlbuilder/badge.svg?branch=master)](https://coveralls.io/github/huandu/go-sqlbuilder?branch=master)
+[![Go](https://github.com/ad3n/go-sqlbuilder/workflows/Go/badge.svg)](https://github.com/ad3n/go-sqlbuilder/actions)
+[![GoDoc](https://godoc.org/github.com/ad3n/go-sqlbuilder?status.svg)](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder)
+[![Go Report](https://goreportcard.com/badge/github.com/ad3n/go-sqlbuilder)](https://goreportcard.com/report/github.com/ad3n/go-sqlbuilder)
+[![Coverage Status](https://coveralls.io/repos/github/ad3n/go-sqlbuilder/badge.svg?branch=master)](https://coveralls.io/github/ad3n/go-sqlbuilder?branch=master)
 
 - [Install](#install)
 - [Usage](#usage)
@@ -32,10 +32,12 @@ This package is not restricted to any particular database driver and does not au
 
 ## Install
 
+Requires Go 1.26 or later.
+
 Install this package by executing the following command:
 
 ```shell
-go get github.com/huandu/go-sqlbuilder
+go get github.com/ad3n/go-sqlbuilder
 ```
 
 ## Usage
@@ -77,17 +79,17 @@ fmt.Println(args)
 
 This package includes the following pre-defined builders. API documentation and usage examples are available in the `godoc` online documentation.
 
-- [Struct](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Struct): Factory for creating builders based on struct definitions.
-- [CreateTableBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#CreateTableBuilder): Builder for `CREATE TABLE`.
-- [SelectBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#SelectBuilder): Builder for `SELECT`.
-- [InsertBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#InsertBuilder): Builder for `INSERT`.
-- [UpdateBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#UpdateBuilder): Builder for `UPDATE`.
-- [DeleteBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#DeleteBuilder): Builder for `DELETE`.
-- [UnionBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#UnionBuilder): Builder for `UNION` and `UNION ALL`.
-- [CTEBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#CTEBuilder): Builder for Common Table Expression (CTE), e.g. `WITH name (col1, col2) AS (SELECT ...)`.
-- [Buildf](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Buildf): Freestyle builder employing `fmt.Sprintf`-like syntax.
-- [Build](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Build): Advanced freestyle builder utilizing special syntax as defined in [Args#Compile](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Args.Compile).
-- [BuildNamed](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#BuildNamed): Advanced freestyle builder that uses `${key}` to reference values by key in a map.
+- [Struct](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Struct): Factory for creating builders based on struct definitions.
+- [CreateTableBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#CreateTableBuilder): Builder for `CREATE TABLE`.
+- [SelectBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#SelectBuilder): Builder for `SELECT`.
+- [InsertBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#InsertBuilder): Builder for `INSERT`.
+- [UpdateBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#UpdateBuilder): Builder for `UPDATE`.
+- [DeleteBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#DeleteBuilder): Builder for `DELETE`.
+- [UnionBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#UnionBuilder): Builder for `UNION` and `UNION ALL`.
+- [CTEBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#CTEBuilder): Builder for Common Table Expression (CTE), e.g. `WITH name (col1, col2) AS (SELECT ...)`.
+- [Buildf](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Buildf): Freestyle builder employing `fmt.Sprintf`-like syntax.
+- [Build](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Build): Advanced freestyle builder utilizing special syntax as defined in [Args#Compile](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Args.Compile).
+- [BuildNamed](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#BuildNamed): Advanced freestyle builder that uses `${key}` to reference values by key in a map.
 
 A unique method, `SQL(sql string)`, is implemented across all statement builders, enabling the insertion of any arbitrary SQL segment into a builder during SQL construction. This feature is particularly beneficial for crafting SQL statements that incorporate non-standard syntax required by OLTP or OLAP systems.
 
@@ -111,11 +113,11 @@ fmt.Println(sql)
 
 Below are several utility methods designed to address special cases.
 
-- [Flatten](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Flatten) enables the recursive conversion of an array-like variable into a flat slice of `[]interface{}`. For example, invoking `Flatten([]interface{"foo", []int{2, 3}})` yields `[]interface{}{"foo", 2, 3}`. This method is compatible with builder methods such as `In`, `NotIn`, `Values`, etc., facilitating the conversion of a typed array into `[]interface{}` or the merging of inputs.
-- [List](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#List) operates similarly to `Flatten`, with the exception that its return value is specifically intended for use as builder arguments. For example, `Buildf("my_func(%v)", List([]int{1, 2, 3})).Build()` generates SQL `my_func(?, ?, ?)` with arguments `[]interface{}{1, 2, 3}`.
-- [Raw](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Raw) designates a string as a "raw string" within arguments. For instance, `Buildf("SELECT %v", Raw("NOW()")).Build()` results in SQL `SELECT NOW()`.
+- [Flatten](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Flatten) enables the recursive conversion of an array-like variable into a flat slice of `[]any`. For example, invoking `Flatten([]any{"foo", []int{2, 3}})` yields `[]any{"foo", 2, 3}`. This method is compatible with builder methods such as `In`, `NotIn`, `Values`, etc., facilitating the conversion of a typed array into `[]any` or the merging of inputs.
+- [List](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#List) operates similarly to `Flatten`, with the exception that its return value is specifically intended for use as builder arguments. For example, `Buildf("my_func(%v)", List([]int{1, 2, 3})).Build()` generates SQL `my_func(?, ?, ?)` with arguments `[]any{1, 2, 3}`.
+- [Raw](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Raw) designates a string as a "raw string" within arguments. For instance, `Buildf("SELECT %v", Raw("NOW()")).Build()` results in SQL `SELECT NOW()`.
 
-For detailed instructions on utilizing these builders, consult the [examples provided on GoDoc](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#pkg-examples).
+For detailed instructions on utilizing these builders, consult the [examples provided on GoDoc](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#pkg-examples).
 
 ### Build `WHERE` clause
 
@@ -144,36 +146,36 @@ fmt.Println(args)
 
 There are many methods for building conditions.
 
-- [Cond.Equal](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.Equal)/[Cond.E](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.E)/[Cond.EQ](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.EQ): `field = value`.
-- [Cond.NotEqual](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.NotEqual)/[Cond.NE](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.NE)/[Cond.NEQ](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.NEQ): `field <> value`.
-- [Cond.GreaterThan](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.GreaterThan)/[Cond.G](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.G)/[Cond.GT](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.GT): `field > value`.
-- [Cond.GreaterEqualThan](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.GreaterEqualThan)/[Cond.GE](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.GE)/[Cond.GTE](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.GTE): `field >= value`.
-- [Cond.LessThan](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.LessThan)/[Cond.L](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.L)/[Cond.LT](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.LT): `field < value`.
-- [Cond.LessEqualThan](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.LessEqualThan)/[Cond.LE](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.LE)/[Cond.LTE](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.LTE): `field <= value`.
-- [Cond.In](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.In): `field IN (value1, value2, ...)`.
-- [Cond.NotIn](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.NotIn): `field NOT IN (value1, value2, ...)`.
-- [Cond.Like](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.Like): `field LIKE value`.
-- [Cond.ILike](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.ILike): `field ILIKE value`.
-- [Cond.NotLike](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.NotLike): `field NOT LIKE value`.
-- [Cond.NotILike](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.NotILike): `field NOT ILIKE value`.
-- [Cond.Between](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.Between): `field BETWEEN lower AND upper`.
-- [Cond.NotBetween](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.NotBetween): `field NOT BETWEEN lower AND upper`.
-- [Cond.IsNull](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.IsNull): `field IS NULL`.
-- [Cond.IsNotNull](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.IsNotNull): `field IS NOT NULL`.
-- [Cond.Exists](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.Exists): `EXISTS (subquery)`.
-- [Cond.NotExists](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.NotExists): `NOT EXISTS (subquery)`.
-- [Cond.Not](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.Not): `NOT expr`.
-- [Cond.Any](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.Any): `field op ANY (value1, value2, ...)`.
-- [Cond.All](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.All): `field op ALL (value1, value2, ...)`.
-- [Cond.Some](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.Some): `field op SOME (value1, value2, ...)`.
-- [Cond.IsDistinctFrom](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.IsDistinctFrom) `field IS DISTINCT FROM value`.
-- [Cond.IsNotDistinctFrom](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.IsNotDistinctFrom) `field IS NOT DISTINCT FROM value`.
-- [Cond.Var](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.Var): A placeholder for any value.
+- [Cond.Equal](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.Equal)/[Cond.E](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.E)/[Cond.EQ](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.EQ): `field = value`.
+- [Cond.NotEqual](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.NotEqual)/[Cond.NE](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.NE)/[Cond.NEQ](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.NEQ): `field <> value`.
+- [Cond.GreaterThan](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.GreaterThan)/[Cond.G](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.G)/[Cond.GT](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.GT): `field > value`.
+- [Cond.GreaterEqualThan](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.GreaterEqualThan)/[Cond.GE](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.GE)/[Cond.GTE](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.GTE): `field >= value`.
+- [Cond.LessThan](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.LessThan)/[Cond.L](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.L)/[Cond.LT](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.LT): `field < value`.
+- [Cond.LessEqualThan](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.LessEqualThan)/[Cond.LE](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.LE)/[Cond.LTE](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.LTE): `field <= value`.
+- [Cond.In](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.In): `field IN (value1, value2, ...)`.
+- [Cond.NotIn](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.NotIn): `field NOT IN (value1, value2, ...)`.
+- [Cond.Like](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.Like): `field LIKE value`.
+- [Cond.ILike](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.ILike): `field ILIKE value`.
+- [Cond.NotLike](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.NotLike): `field NOT LIKE value`.
+- [Cond.NotILike](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.NotILike): `field NOT ILIKE value`.
+- [Cond.Between](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.Between): `field BETWEEN lower AND upper`.
+- [Cond.NotBetween](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.NotBetween): `field NOT BETWEEN lower AND upper`.
+- [Cond.IsNull](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.IsNull): `field IS NULL`.
+- [Cond.IsNotNull](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.IsNotNull): `field IS NOT NULL`.
+- [Cond.Exists](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.Exists): `EXISTS (subquery)`.
+- [Cond.NotExists](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.NotExists): `NOT EXISTS (subquery)`.
+- [Cond.Not](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.Not): `NOT expr`.
+- [Cond.Any](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.Any): `field op ANY (value1, value2, ...)`.
+- [Cond.All](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.All): `field op ALL (value1, value2, ...)`.
+- [Cond.Some](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.Some): `field op SOME (value1, value2, ...)`.
+- [Cond.IsDistinctFrom](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.IsDistinctFrom) `field IS DISTINCT FROM value`.
+- [Cond.IsNotDistinctFrom](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.IsNotDistinctFrom) `field IS NOT DISTINCT FROM value`.
+- [Cond.Var](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.Var): A placeholder for any value.
 
 There are also some methods to combine conditions.
 
-- [Cond.And](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.And): Combine conditions with `AND` operator.
-- [Cond.Or](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Cond.Or): Combine conditions with `OR` operator.
+- [Cond.And](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.And): Combine conditions with `AND` operator.
+- [Cond.Or](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Cond.Or): Combine conditions with `OR` operator.
 
 ### Share `WHERE` clause among builders
 
@@ -223,7 +225,7 @@ fmt.Println(args)
 // [Huan Du]
 ```
 
-Refer to the [WhereClause](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#WhereClause) examples to learn its usage.
+Refer to the [WhereClause](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#WhereClause) examples to learn its usage.
 
 ### Build `ORDER BY` clause
 
@@ -355,7 +357,7 @@ fmt.Println(sql)
 // SELECT e.id, e.payload FROM events e
 ```
 
-For detailed instructions on utilizing `Struct`, refer to the [examples](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#Struct).
+For detailed instructions on utilizing `Struct`, refer to the [examples](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#Struct).
 
 Furthermore, `Struct` can be employed as a zero-configuration ORM. Unlike most ORM implementations that necessitate preliminary configurations for database connectivity, `Struct` operates without any configuration, functioning seamlessly with any SQL driver compatible with `database/sql`. `Struct` does not invoke any `database/sql` APIs; it solely generates the appropriate SQL statements with arguments for `DB#Query`/`DB#Exec` or an array of struct field addresses for `Rows#Scan`/`Row#Scan`.
 
@@ -412,7 +414,7 @@ Here are important considerations regarding the field mapper:
 - Field tag has precedence over field mapper function - thus, mapper is ignored if the `db` tag is set;
 - Field mapper is called only once on a Struct when the Struct is used to create builder for the first time.
 
-Refer to the [field mapper function sample](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#FieldMapperFunc) for an illustrative example.
+Refer to the [field mapper function sample](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#FieldMapperFunc) for an illustrative example.
 
 ### Nested SQL
 
@@ -506,7 +508,7 @@ fmt.Println(args)
 Several argument modifiers are available:
 
 - `List(arg)` encapsulates a series of arguments. Given `arg` as a slice or array, for instance, a slice containing three integers, it compiles to `?, ?, ?` and is presented in the final arguments as three individual integers. This serves as a convenience tool, utilizable within `IN` expressions or within the `VALUES` clause of an `INSERT INTO` statement.
-- `TupleNames(names)` and `Tuple(values)` facilitate the representation of tuple syntax in SQL. For usage examples, refer to [Tuple](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#example-Tuple).
+- `TupleNames(names)` and `Tuple(values)` facilitate the representation of tuple syntax in SQL. For usage examples, refer to [Tuple](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#example-Tuple).
 - `Named(name, arg)` designates a named argument. Functionality is limited to `Build` or `BuildNamed`, where it defines a named placeholder using the syntax `${name}`.
 - `Raw(expr)` designates `expr` as a plain string within SQL, as opposed to an argument. During the construction of a builder, raw expressions are directly embedded into the SQL string, omitting the need for `?` placeholders.
 
@@ -534,21 +536,21 @@ The `Clone` methods make any builder reusable as a template. You can create a pa
 
 Supported builders with `Clone`:
 
-- [CreateTableBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#CreateTableBuilder)
-- [CTEBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#CTEBuilder)
-- [CTEQueryBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#CTEQueryBuilder)
-- [DeleteBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#DeleteBuilder)
-- [InsertBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#InsertBuilder)
-- [SelectBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#SelectBuilder)
-- [UnionBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#UnionBuilder)
-- [UpdateBuilder](https://pkg.go.dev/github.com/huandu/go-sqlbuilder#UpdateBuilder)
+- [CreateTableBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#CreateTableBuilder)
+- [CTEBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#CTEBuilder)
+- [CTEQueryBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#CTEQueryBuilder)
+- [DeleteBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#DeleteBuilder)
+- [InsertBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#InsertBuilder)
+- [SelectBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#SelectBuilder)
+- [UnionBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#UnionBuilder)
+- [UpdateBuilder](https://pkg.go.dev/github.com/ad3n/go-sqlbuilder#UpdateBuilder)
 
 Example: define a global SELECT template and clone it per call
 
 ```go
 package yourpkg
 
-import "github.com/huandu/go-sqlbuilder"
+import "github.com/ad3n/go-sqlbuilder"
 
 // Global template — safe to reuse by cloning.
 var baseUserSelect = sqlbuilder.NewSelectBuilder().
@@ -556,14 +558,14 @@ var baseUserSelect = sqlbuilder.NewSelectBuilder().
     From("users").
     Where("deleted_at IS NULL")
 
-func ListActiveUsers(limit, offset int) (string, []interface{}) {
+func ListActiveUsers(limit, offset int) (string, []any) {
     sb := baseUserSelect.Clone() // independent copy
     sb.OrderByAsc("id")
     sb.Limit(limit).Offset(offset)
     return sb.Build()
 }
 
-func GetActiveUserByID(id int64) (string, []interface{}) {
+func GetActiveUserByID(id int64) (string, []any) {
     sb := baseUserSelect.Clone() // start from the same template
     sb.Where(sb.Equal("id", id))
     sb.Limit(1)
@@ -643,7 +645,7 @@ CREATE FUNCTION dup(in int, out f1 int, out f2 text) AS $$
 $$
 LANGUAGE SQL;
 
-SELECT * FROM dup($1);`, []interface{}{42})
+SELECT * FROM dup($1);`, []any{42})
 
 fmt.Println(query)
 fmt.Println(err)

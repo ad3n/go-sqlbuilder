@@ -16,15 +16,12 @@ import (
 	"unsafe"
 )
 
-// mysqlInterpolate parses query and replace all "?" with encoded args.
-// If there are more "?" than len(args), returns ErrMissingArgs.
-// Otherwise, if there are less "?" than len(args), the redundant args are omitted.
-func mysqlInterpolate(query string, args ...interface{}) (string, error) {
+func mysqlInterpolate(query string, args ...any) (string, error) {
 	return mysqlLikeInterpolate(MySQL, query, args...)
 }
 
-func mysqlLikeInterpolate(flavor Flavor, query string, args ...interface{}) (string, error) {
-	// Roughly estimate the size to avoid useless memory allocation and copy.
+func mysqlLikeInterpolate(flavor Flavor, query string, args ...any) (string, error) {
+
 	buf := make([]byte, 0, len(query)+len(args)*20)
 
 	var quote rune
@@ -107,11 +104,8 @@ func mysqlLikeInterpolate(flavor Flavor, query string, args ...interface{}) (str
 	return *(*string)(unsafe.Pointer(&buf)), nil
 }
 
-// postgresqlInterpolate parses query and replace all "$*" with encoded args.
-// If there are more "$*" than len(args), returns ErrMissingArgs.
-// Otherwise, if there are less "$*" than len(args), the redundant args are omitted.
-func postgresqlInterpolate(query string, args ...interface{}) (string, error) {
-	// Roughly estimate the size to avoid useless memory allocation and copy.
+func postgresqlInterpolate(query string, args ...any) (string, error) {
+
 	buf := make([]byte, 0, len(query)+len(args)*20)
 
 	var quote rune
@@ -140,7 +134,6 @@ func postgresqlInterpolate(query string, args ...interface{}) (string, error) {
 					continue
 				}
 
-				// Try to find the end of dollar quote.
 				pos := offset
 
 				for r, sz = utf8.DecodeRuneInString(target); sz != 0 && r != '$'; r, sz = utf8.DecodeRuneInString(target) {
@@ -175,7 +168,7 @@ func postgresqlInterpolate(query string, args ...interface{}) (string, error) {
 			r, sz = utf8.DecodeRuneInString(target)
 
 			if '1' <= r && r <= '9' {
-				// A placeholder is found.
+
 				pos += sz
 				target = query[pos:]
 
@@ -211,7 +204,6 @@ func postgresqlInterpolate(query string, args ...interface{}) (string, error) {
 				continue
 			}
 
-			// Try to find the beginning of dollar quote.
 			for ; sz != 0 && r != '$' && unicode.IsLetter(r); r, sz = utf8.DecodeRuneInString(target) {
 				pos += sz
 				target = query[pos:]
@@ -233,7 +225,7 @@ func postgresqlInterpolate(query string, args ...interface{}) (string, error) {
 
 		case '\'':
 			if quote == '\'' {
-				// PostgreSQL uses two single quotes to represent one single quote.
+
 				r, sz = utf8.DecodeRuneInString(target)
 
 				if r == '\'' {
@@ -271,11 +263,8 @@ func postgresqlInterpolate(query string, args ...interface{}) (string, error) {
 	return *(*string)(unsafe.Pointer(&buf)), nil
 }
 
-// sqlserverInterpolate parses query and replace all "@p*" with encoded args.
-// If there are more "@p*" than len(args), returns ErrMissingArgs.
-// Otherwise, if there are less "@p*" than len(args), the redundant args are omitted.
-func sqlserverInterpolate(query string, args ...interface{}) (string, error) {
-	// Roughly estimate the size to avoid useless memory allocation and copy.
+func sqlserverInterpolate(query string, args ...any) (string, error) {
+
 	buf := make([]byte, 0, len(query)+len(args)*20)
 
 	var quote rune
@@ -306,7 +295,6 @@ func sqlserverInterpolate(query string, args ...interface{}) (string, error) {
 			pos := offset
 			r, sz = utf8.DecodeRuneInString(target)
 
-			// Only parameters starting with @p or @P are interpolated.
 			if r != 'p' && r != 'P' {
 				continue
 			}
@@ -316,7 +304,7 @@ func sqlserverInterpolate(query string, args ...interface{}) (string, error) {
 			r, sz = utf8.DecodeRuneInString(target)
 
 			if '1' <= r && r <= '9' {
-				// A placeholder is found.
+
 				pos += sz
 				target = query[pos:]
 
@@ -383,37 +371,32 @@ func sqlserverInterpolate(query string, args ...interface{}) (string, error) {
 	return *(*string)(unsafe.Pointer(&buf)), nil
 }
 
-// mysqlInterpolate works the same as MySQL interpolating.
-func sqliteInterpolate(query string, args ...interface{}) (string, error) {
+func sqliteInterpolate(query string, args ...any) (string, error) {
 	return mysqlLikeInterpolate(SQLite, query, args...)
 }
 
-// cqlInterpolate works the same as MySQL interpolating.
-func cqlInterpolate(query string, args ...interface{}) (string, error) {
+func cqlInterpolate(query string, args ...any) (string, error) {
 	return mysqlLikeInterpolate(CQL, query, args...)
 }
 
-func clickhouseInterpolate(query string, args ...interface{}) (string, error) {
+func clickhouseInterpolate(query string, args ...any) (string, error) {
 	return mysqlLikeInterpolate(ClickHouse, query, args...)
 }
 
-func prestoInterpolate(query string, args ...interface{}) (string, error) {
+func prestoInterpolate(query string, args ...any) (string, error) {
 	return mysqlLikeInterpolate(Presto, query, args...)
 }
 
-func informixInterpolate(query string, args ...interface{}) (string, error) {
+func informixInterpolate(query string, args ...any) (string, error) {
 	return mysqlLikeInterpolate(Informix, query, args...)
 }
 
-func dorisInterpolate(query string, args ...interface{}) (string, error) {
+func dorisInterpolate(query string, args ...any) (string, error) {
 	return mysqlLikeInterpolate(Doris, query, args...)
 }
 
-// oraclelInterpolate parses query and replace all ":*" with encoded args.
-// If there are more ":*" than len(args), returns ErrMissingArgs.
-// Otherwise, if there are less ":*" than len(args), the redundant args are omitted.
-func oracleInterpolate(query string, args ...interface{}) (string, error) {
-	// Roughly estimate the size to avoid useless memory allocation and copy.
+func oracleInterpolate(query string, args ...any) (string, error) {
+
 	buf := make([]byte, 0, len(query)+len(args)*20)
 
 	var quote rune
@@ -442,7 +425,6 @@ func oracleInterpolate(query string, args ...interface{}) (string, error) {
 					continue
 				}
 
-				// Try to find the end of dollar quote.
 				pos := offset
 
 				for r, sz = utf8.DecodeRuneInString(target); sz != 0 && r != ':'; r, sz = utf8.DecodeRuneInString(target) {
@@ -477,7 +459,7 @@ func oracleInterpolate(query string, args ...interface{}) (string, error) {
 			r, sz = utf8.DecodeRuneInString(target)
 
 			if '1' <= r && r <= '9' {
-				// A placeholder is found.
+
 				pos += sz
 				target = query[pos:]
 
@@ -513,7 +495,6 @@ func oracleInterpolate(query string, args ...interface{}) (string, error) {
 				continue
 			}
 
-			// Try to find the beginning of dollar quote.
 			for ; sz != 0 && r != ':' && unicode.IsLetter(r); r, sz = utf8.DecodeRuneInString(target) {
 				pos += sz
 				target = query[pos:]
@@ -535,7 +516,7 @@ func oracleInterpolate(query string, args ...interface{}) (string, error) {
 
 		case '\'':
 			if quote == '\'' {
-				// PostgreSQL uses two single quotes to represent one single quote.
+
 				r, sz = utf8.DecodeRuneInString(target)
 
 				if r == '\'' {
@@ -573,7 +554,7 @@ func oracleInterpolate(query string, args ...interface{}) (string, error) {
 	return *(*string)(unsafe.Pointer(&buf)), nil
 }
 
-func encodeValue(buf []byte, arg interface{}, flavor Flavor) ([]byte, error) {
+func encodeValue(buf []byte, arg any, flavor Flavor) ([]byte, error) {
 	switch v := arg.(type) {
 	case nil:
 		buf = append(buf, "NULL"...)
@@ -591,8 +572,6 @@ func encodeValue(buf []byte, arg interface{}, flavor Flavor) ([]byte, error) {
 			break
 		}
 
-		// In SQL standard, the precision of fractional seconds in time literal is up to 6 digits.
-		// Round up v.
 		v = v.Add(500 * time.Nanosecond)
 
 		switch flavor {
@@ -623,14 +602,11 @@ func encodeValue(buf []byte, arg interface{}, flavor Flavor) ([]byte, error) {
 	default:
 		primative := reflect.ValueOf(arg)
 
-		// Handle typed nil values (e.g. (*string)(nil), (*time.Time)(nil))
-		// This check must come before fmt.Stringer check since nil pointers may implement interfaces
-		if !primative.IsValid() || (primative.Kind() == reflect.Ptr && primative.IsNil()) {
+		if !primative.IsValid() || (primative.Kind() == reflect.Pointer && primative.IsNil()) {
 			buf = append(buf, "NULL"...)
 			return buf, nil
 		}
 
-		// Check for fmt.Stringer after nil pointer check
 		if stringer, ok := arg.(fmt.Stringer); ok {
 			buf = quoteStringValue(buf, stringer.String(), flavor)
 			return buf, nil
@@ -704,13 +680,11 @@ func encodeValue(buf []byte, arg interface{}, flavor Flavor) ([]byte, error) {
 
 			var data []byte
 
-			// Bytes() will panic if primative is an array and cannot be addressed.
-			// Copy all bytes to data as a fallback.
 			if k == reflect.Array && !primative.CanAddr() {
 				l := primative.Len()
 				data = make([]byte, l)
 
-				for i := 0; i < l; i++ {
+				for i := range l {
 					data[i] = byte(primative.Index(i).Uint())
 				}
 			} else {

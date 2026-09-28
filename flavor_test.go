@@ -94,15 +94,14 @@ func ExampleFlavor_Interpolate_mySQL() {
 }
 
 func ExampleFlavor_Interpolate_postgreSQL() {
-	// Only the last `$1` is interpolated.
-	// Others are not interpolated as they are inside dollar quote (the `$$`).
+
 	query, err := PostgreSQL.Interpolate(`
 CREATE FUNCTION dup(in int, out f1 int, out f2 text) AS $$
     SELECT $1, CAST($1 AS text) || ' is text'
 $$
 LANGUAGE SQL;
 
-SELECT * FROM dup($1);`, []interface{}{42})
+SELECT * FROM dup($1);`, []any{42})
 
 	fmt.Println(query)
 	fmt.Println(err)

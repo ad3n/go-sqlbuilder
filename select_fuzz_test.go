@@ -39,9 +39,8 @@ func (fs *fuzzState) updateCallchain(method string, args []reflect.Value) {
 }
 
 func getSelectBuilderMethods() (map[string]reflect.Type, []string) {
-	sb := NewSelectBuilder()
-	sbType := reflect.TypeOf(sb)
-	// Skip methods that are likely to cause issues or don't return builders
+	sbType := reflect.TypeFor[*SelectBuilder]()
+
 	skipMethods := []string{
 		"Build", "String", "BuildWithFlavor", "Flavor",
 		"NumCol", "NumValue", "NumAssignment", "TableNames", "Var",
@@ -50,8 +49,7 @@ func getSelectBuilderMethods() (map[string]reflect.Type, []string) {
 	methodList := make(map[string]reflect.Type)
 	methodNames := make([]string, 0, sbType.NumMethod())
 
-	for i := 0; i < sbType.NumMethod(); i++ {
-		method := sbType.Method(i)
+	for method := range sbType.Methods() {
 		if slices.Contains(skipMethods, method.Name) {
 			continue
 		}
@@ -75,8 +73,8 @@ func generateMethodArgs(methodType reflect.Type, state *fuzzState) ([]reflect.Va
 
 func generateFixedArgs(methodType reflect.Type, numArgs int, state *fuzzState) ([]reflect.Value, bool) {
 	args := make([]reflect.Value, numArgs)
-	for i := 0; i < numArgs; i++ {
-		argType := methodType.In(i + 1) // Skip receiver
+	for i := range numArgs {
+		argType := methodType.In(i + 1)
 		argData := state.consumeData(16)
 		args[i] = generateArgumentForType(argType, argData)
 
@@ -84,23 +82,22 @@ func generateFixedArgs(methodType reflect.Type, numArgs int, state *fuzzState) (
 			return nil, false
 		}
 
-		// Additional type compatibility check for complex types
-		if argType.Kind() == reflect.Ptr && args[i].Kind() == reflect.Ptr {
+		if argType.Kind() == reflect.Pointer && args[i].Kind() == reflect.Pointer {
 			if argType != args[i].Type() {
 				return nil, false
 			}
 		}
 	}
+
 	return args, true
 }
 
 func generateVariadicArgs(methodType reflect.Type, numArgs int, state *fuzzState) ([]reflect.Value, bool) {
-	numFixedArgs := numArgs - 1 // Last parameter is the variadic slice
+	numFixedArgs := numArgs - 1
 
-	// Generate fixed arguments first
 	args := make([]reflect.Value, numFixedArgs)
-	for i := 0; i < numFixedArgs; i++ {
-		argType := methodType.In(i + 1) // Skip receiver
+	for i := range numFixedArgs {
+		argType := methodType.In(i + 1)
 		argData := state.consumeData(16)
 		args[i] = generateArgumentForType(argType, argData)
 		if !args[i].IsValid() {
@@ -108,13 +105,11 @@ func generateVariadicArgs(methodType reflect.Type, numArgs int, state *fuzzState
 		}
 	}
 
-	// Generate variadic arguments (0-3 arguments to keep it reasonable)
 	if numFixedArgs < numArgs {
-		variadicType := methodType.In(numArgs).Elem() // Get the element type of the slice
+		variadicType := methodType.In(numArgs).Elem()
 		numVariadicArgs := 0
 		if len(state.data) > state.dataIndex {
-			// 0-3 variadic args, keep the number small while still exercising multiple values
-			// TODO: Possible fuzz improvement to allow for more variadic args. Not sure it's worth it.
+
 			numVariadicArgs = int(state.data[state.dataIndex] % 4)
 			state.dataIndex++
 		}
@@ -125,6 +120,7 @@ func generateVariadicArgs(methodType reflect.Type, numArgs int, state *fuzzState
 			if !varArg.IsValid() {
 				return nil, false
 			}
+
 			args = append(args, varArg)
 		}
 	}
@@ -133,32 +129,27 @@ func generateVariadicArgs(methodType reflect.Type, numArgs int, state *fuzzState
 }
 
 func tryCallMethod(methodName string, methodType reflect.Type, state *fuzzState, t *testing.T) bool {
-	// Check if method exists on current builder
+
 	callableMethod := state.currentBuilder.MethodByName(methodName)
 	if !callableMethod.IsValid() {
 		return false
 	}
 
-	// Generate arguments
 	args, canCall := generateMethodArgs(methodType, state)
 	if !canCall {
 		return false
 	}
 
-	// Update call chain representation and log it
 	state.updateCallchain(methodName, args)
 	t.Log("callchain:", state.callchainRepresentation)
 
-	// Mark this method as used
 	state.usedMethods[methodName] = true
 
-	// Call method and capture result for chaining
 	result := callableMethod.Call(args)
 
-	// Only chain if method returns the same builder type (SelectBuilder)
 	if len(result) > 0 && result[0].IsValid() {
 		resultType := result[0].Type()
-		if resultType.Kind() == reflect.Ptr &&
+		if resultType.Kind() == reflect.Pointer &&
 			resultType.String() == "*sqlbuilder.SelectBuilder" &&
 			!result[0].IsNil() {
 			state.currentBuilder = result[0]
@@ -169,23 +160,21 @@ func tryCallMethod(methodName string, methodType reflect.Type, state *fuzzState,
 }
 
 func executeMethodChain(methodList map[string]reflect.Type, methodNames []string, state *fuzzState, maxChains uint8, t *testing.T) {
-	for nbFunc := uint8(0); nbFunc < maxChains; nbFunc++ {
+	for range maxChains {
 		methodCalled := false
 
-		// Try to find a method we haven't used yet to create more varied chains
 		for _, method := range methodNames {
-			// Skip methods we've already used to create more variety
+
 			if state.usedMethods[method] && len(state.usedMethods) < len(methodNames) {
 				continue
 			}
 
 			if tryCallMethod(method, methodList[method], state, t) {
 				methodCalled = true
-				break // Move to next chain iteration
+				break
 			}
 		}
 
-		// If no method could be called, break the chain
 		if !methodCalled {
 			break
 		}
@@ -208,16 +197,13 @@ func FuzzSelect(f *testing.F) {
 			return
 		}
 
-		// Get all available methods for SelectBuilder
 		methodList, methodNames := getSelectBuilderMethods()
 
-		// Randomize method order deterministically based on seed
 		r := rand.New(rand.NewSource(seed))
 		r.Shuffle(len(methodNames), func(i, j int) {
 			methodNames[i], methodNames[j] = methodNames[j], methodNames[i]
 		})
 
-		// Initialize fuzzing state
 		state := &fuzzState{
 			data:                    data,
 			dataIndex:               0,
@@ -226,28 +212,20 @@ func FuzzSelect(f *testing.F) {
 			usedMethods:             make(map[string]bool),
 		}
 
-		// Limit the number of chained functions to prevent infinite loops
-		maxChains := numberOfChainedFunction
-		if maxChains > 10 {
-			maxChains = 10
-		}
+		maxChains := min(numberOfChainedFunction, 10)
 
-		// Execute method chain
 		executeMethodChain(methodList, methodNames, state, maxChains, t)
 
 		t.Logf("Final callchain: %s", state.callchainRepresentation)
-		// Try to build the final result
+
 		finalizeBuild(state)
 	})
 }
 
-// generateArgumentForType generates a reflect.Value for the given type based on the provided data.
-// It will consume the data slice to create a value of the specified type.
-// It handles specific custom types like JoinOption and Flavor, and Go will consider them disntinct types than their aliases.
 func generateArgumentForType(argType reflect.Type, data []byte) reflect.Value {
 	switch argType.Kind() {
 	case reflect.String:
-		// Handle specific custom string types first
+
 		if argType.String() == "sqlbuilder.JoinOption" {
 			joinOptions := []JoinOption{
 				FullJoin, FullOuterJoin, InnerJoin,
@@ -256,12 +234,13 @@ func generateArgumentForType(argType reflect.Type, data []byte) reflect.Value {
 			if len(data) > 0 {
 				return reflect.ValueOf(joinOptions[int(data[0])%len(joinOptions)])
 			}
+
 			return reflect.ValueOf(InnerJoin)
 		}
-		// Use remaining data as string
+
 		return reflect.ValueOf(string(data))
 	case reflect.Int:
-		// Handle specific custom int types first
+
 		if argType.String() == "sqlbuilder.Flavor" {
 			return reflect.ValueOf(DefaultFlavor)
 		}
@@ -341,51 +320,48 @@ func generateArgumentForType(argType reflect.Type, data []byte) reflect.Value {
 			return reflect.ValueOf([]string{string(data)})
 		}
 		if argType.Elem().Kind() == reflect.Interface {
-			return reflect.ValueOf([]interface{}{string(data)})
+			return reflect.ValueOf([]any{string(data)})
 		}
-		return reflect.ValueOf([]interface{}{string(data)})
-	case reflect.Ptr:
-		// Handle pointer types by creating a pointer to the underlying type
-		// Handle specific pointer types
-		if argType == reflect.TypeOf((*WhereClause)(nil)) {
+		return reflect.ValueOf([]any{string(data)})
+	case reflect.Pointer:
+
+		if argType == reflect.TypeFor[*WhereClause]() {
 			return reflect.ValueOf(NewWhereClause())
 		}
-		if argType == reflect.TypeOf((*SelectBuilder)(nil)) {
+		if argType == reflect.TypeFor[*SelectBuilder]() {
 			return reflect.ValueOf(NewSelectBuilder())
 		}
-		if argType == reflect.TypeOf((*Args)(nil)) {
+		if argType == reflect.TypeFor[*Args]() {
 			return reflect.ValueOf(&Args{})
 		}
-		if argType == reflect.TypeOf((*CTEBuilder)(nil)) {
+		if argType == reflect.TypeFor[*CTEBuilder]() {
 			return reflect.ValueOf(DefaultFlavor.NewCTEBuilder())
 		}
-		if argType == reflect.TypeOf((*InsertBuilder)(nil)) {
+		if argType == reflect.TypeFor[*InsertBuilder]() {
 			return reflect.ValueOf(DefaultFlavor.NewInsertBuilder())
 		}
-		if argType == reflect.TypeOf((*UpdateBuilder)(nil)) {
+		if argType == reflect.TypeFor[*UpdateBuilder]() {
 			return reflect.ValueOf(DefaultFlavor.NewUpdateBuilder())
 		}
-		if argType == reflect.TypeOf((*DeleteBuilder)(nil)) {
+		if argType == reflect.TypeFor[*DeleteBuilder]() {
 			return reflect.ValueOf(DefaultFlavor.NewDeleteBuilder())
 		}
-		// For other pointer types, create a pointer to the underlying type
+
 		str := string(data)
 		return reflect.ValueOf(&str)
 	case reflect.Interface:
-		// Handle specific interface types
+
 		if argType.String() == "sqlbuilder.Builder" {
-			// Create a simple SelectBuilder for Builder interface
+
 			return reflect.ValueOf(NewSelectBuilder())
 		}
 		return reflect.ValueOf(string(data))
 	default:
-		// For other types, use zero value
+
 		return reflect.Zero(argType)
 	}
 }
 
-// FuzzSelectClone fuzzes SelectBuilder.Clone behavior under concurrent usage
-// and ensures cloned instances are independent and safe to mutate.
 func FuzzSelectClone(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte, seed int64, numberOfChainedFunction uint8) {
 		if len(data) == 0 {
@@ -399,7 +375,6 @@ func FuzzSelectClone(f *testing.F) {
 			methodNames[i], methodNames[j] = methodNames[j], methodNames[i]
 		})
 
-		// Build a base template SelectBuilder via fuzzed method chains.
 		base := NewSelectBuilder()
 		baseState := &fuzzState{
 			data:                    data,
@@ -409,35 +384,33 @@ func FuzzSelectClone(f *testing.F) {
 			usedMethods:             make(map[string]bool),
 		}
 
-		maxChains := numberOfChainedFunction
-		if maxChains > 10 {
-			maxChains = 10
-		}
+		maxChains := min(numberOfChainedFunction, 10)
 		executeMethodChain(methodList, methodNames, baseState, maxChains, t)
 
 		baseSQLBefore, baseArgsBefore := base.Build()
 
-		// Clone concurrently and mutate clones with fuzzed chains.
-		cloneCount := int(r.Uint32()%4) + 1 // 1..4 clones
+		cloneCount := int(r.Uint32()%4) + 1
 		var wg sync.WaitGroup
 		wg.Add(cloneCount)
 		start := make(chan struct{})
 
 		type result struct {
 			sql  string
-			args []interface{}
+			args []any
 		}
 		results := make(chan result, cloneCount)
 
-		for i := 0; i < cloneCount; i++ {
-			// Use different offsets into the same fuzz data for variety.
+		for i := range cloneCount {
+
 			offset := 0
 			if len(data) > 0 {
 				offset = (i * 17) % len(data)
 			}
+
 			go func(off int) {
 				defer wg.Done()
-				<-start // start all goroutines roughly at the same time
+
+				<-start
 
 				c := base.Clone()
 				st := &fuzzState{
@@ -448,7 +421,7 @@ func FuzzSelectClone(f *testing.F) {
 					usedMethods:             make(map[string]bool),
 				}
 				executeMethodChain(methodList, methodNames, st, maxChains, t)
-				finalizeBuild(st) // ensure no panic on Build
+				finalizeBuild(st)
 				s, a := c.Build()
 				results <- result{sql: s, args: a}
 			}(offset)
@@ -458,21 +431,20 @@ func FuzzSelectClone(f *testing.F) {
 		wg.Wait()
 		close(results)
 
-		// Ensure base builder stays unchanged after concurrent cloning/mutation of clones.
 		baseSQLAfter, baseArgsAfter := base.Build()
 		if baseSQLBefore != baseSQLAfter || !reflect.DeepEqual(baseArgsBefore, baseArgsAfter) {
 			t.Fatalf("base builder mutated by clones:\n before: %s %v\n after: %s %v", baseSQLBefore, baseArgsBefore, baseSQLAfter, baseArgsAfter)
 		}
 
-		// Independence check: mutating one clone does not affect another clone.
 		cloneA := base.Clone()
 		sA1, aA1 := cloneA.Build()
 
 		done := make(chan struct{})
 		go func() {
 			defer close(done)
+
 			c2 := base.Clone()
-			// Apply a deterministic small change; should not affect cloneA.
+
 			c2.OrderBy("id").Desc().Limit(1).Offset(0)
 			_, _ = c2.Build()
 		}()
@@ -481,9 +453,9 @@ func FuzzSelectClone(f *testing.F) {
 		if sA1 != sA2 || !reflect.DeepEqual(aA1, aA2) {
 			t.Fatalf("cloneA changed after mutating another clone")
 		}
+
 		<-done
 
-		// Further independence: modifying cloneA should not affect the base.
 		cloneA.Limit(3).Asc()
 		_ = cloneA.String()
 		baseSQLFinal, baseArgsFinal := base.Build()
@@ -491,7 +463,6 @@ func FuzzSelectClone(f *testing.F) {
 			t.Fatalf("base changed after modifying a clone")
 		}
 
-		// Drain results to ensure all builds completed; mainly to use the values and avoid lints.
 		for range results {
 		}
 	})

@@ -5,6 +5,7 @@ package sqlbuilder
 
 import (
 	"io"
+	"strconv"
 	"strings"
 )
 
@@ -57,13 +58,25 @@ func (sb *stringBuilder) WriteStrings(ss []string, sep string) {
 }
 
 func (sb *stringBuilder) WriteStringsPrefixed(prefix string, ss []string, sep string) {
-	prefixedSs := []string{}
-
+	firstAdded := false
 	for _, s := range ss {
-		prefixedSs = append(prefixedSs, prefix+s)
-	}
+		if len(prefix) == 0 && len(s) == 0 {
+			continue
+		}
 
-	sb.WriteStrings(prefixedSs, sep)
+		if firstAdded {
+			sb.WriteString(sep)
+		}
+
+		sb.WriteString(prefix)
+		sb.WriteString(s)
+		firstAdded = true
+	}
+}
+
+func (sb *stringBuilder) WriteInt(value int) {
+	var scratch [20]byte
+	sb.builder.Write(strconv.AppendInt(scratch[:0], int64(value), 10))
 }
 
 func (sb *stringBuilder) WriteRune(r rune) {

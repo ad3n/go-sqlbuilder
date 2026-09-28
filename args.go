@@ -7,9 +7,10 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/huandu/go-clone"
 )
@@ -27,10 +28,9 @@ type Args struct {
 }
 
 func init() {
-	// Predefine some $n args to avoid additional memory allocation.
 	predefinedArgs = make([]string, 0, maxPredefinedArgs)
 
-	for i := 0; i < maxPredefinedArgs; i++ {
+	for i := range maxPredefinedArgs {
 		predefinedArgs = append(predefinedArgs, fmt.Sprintf("$%v", i))
 	}
 }
@@ -39,18 +39,19 @@ const maxPredefinedArgs = 64
 
 var predefinedArgs []string
 
-// Add adds an arg to Args and returns a placeholder.
-func (args *Args) Add(arg interface{}) string {
+func (args *Args) Add(arg any) string {
 	idx := args.add(arg)
 
 	if idx < maxPredefinedArgs {
 		return predefinedArgs[idx]
 	}
 
-	return fmt.Sprintf("$%v", idx)
+	var scratch [21]byte
+	scratch[0] = '$'
+	return string(strconv.AppendInt(scratch[:1], int64(idx), 10))
 }
 
-func (args *Args) add(arg interface{}) int {
+func (args *Args) add(arg any) int {
 	idx := args.argValues.Len() + args.indexBase
 
 	switch a := arg.(type) {
@@ -75,7 +76,6 @@ func (args *Args) add(arg interface{}) int {
 			break
 		}
 
-		// Find out the real arg and add it to args.
 		idx = args.add(a.arg)
 		args.namedArgs[a.name] = idx
 		return idx
@@ -89,11 +89,7 @@ func (args *Args) add(arg interface{}) int {
 	return idx
 }
 
-// Replace replaces the placeholder with arg.
-//
-// The placeholder must be the value returned by `Add`, e.g. "$1".
-// If the placeholder is not found, this method does nothing.
-func (args *Args) Replace(placeholder string, arg interface{}) {
+func (args *Args) Replace(placeholder string, arg any) {
 	dollar := strings.IndexRune(placeholder, '$')
 
 	if dollar != 0 {
@@ -106,29 +102,22 @@ func (args *Args) Replace(placeholder string, arg interface{}) {
 	}
 }
 
-// Compile compiles builder's format to standard sql and returns associated args.
-//
-// The format string uses a special syntax to represent arguments.
-//
-//	$? refers successive arguments passed in the call. It works similar as `%v` in `fmt.Sprintf`.
-//	$0 $1 ... $n refers nth-argument passed in the call. Next $? will use arguments n+1.
-//	${name} refers a named argument created by `Named` with `name`.
-//	$$ is a "$" string.
-func (args *Args) Compile(format string, initialValue ...interface{}) (query string, values []interface{}) {
+func (args *Args) Compile(format string, initialValue ...any) (query string, values []any) {
 	return args.CompileWithFlavor(format, args.Flavor, initialValue...)
 }
 
-// CompileWithFlavor compiles builder's format to standard sql with flavor and returns associated args.
-//
-// See doc for `Compile` to learn details.
-func (args *Args) CompileWithFlavor(format string, flavor Flavor, initialValue ...interface{}) (query string, values []interface{}) {
+func (args *Args) CompileWithFlavor(format string, flavor Flavor, initialValue ...any) (query string, values []any) {
 	idx := strings.IndexRune(format, '$')
-	offset := 0
-	ctx := &argsCompileContext{
-		stringBuilder: newStringBuilder(),
-		Flavor:        flavor,
-		Values:        initialValue,
+	if idx < 0 && len(args.sqlNamedArgs) == 0 {
+		return format, initialValue
 	}
+
+	offset := 0
+	ctx := argsCompileContextPool.Get().(*argsCompileContext)
+	defer releaseArgsCompileContext(ctx)
+
+	ctx.Flavor = flavor
+	ctx.Values = initialValue
 
 	if ctx.Flavor == invalidFlavor {
 		ctx.Flavor = DefaultFlavor
@@ -141,7 +130,6 @@ func (args *Args) CompileWithFlavor(format string, flavor Flavor, initialValue .
 
 		format = format[idx+1:]
 
-		// Treat the $ at the end of format is a normal $ rune.
 		if len(format) == 0 {
 			ctx.WriteRune('$')
 			break
@@ -157,7 +145,6 @@ func (args *Args) CompileWithFlavor(format string, flavor Flavor, initialValue .
 		} else if !args.onlyNamed && r == '?' {
 			format, offset = args.compileSuccessive(ctx, format[1:], offset)
 		} else {
-			// For unknown $ expression format, treat it as a normal $ rune.
 			ctx.WriteRune('$')
 		}
 
@@ -173,9 +160,7 @@ func (args *Args) CompileWithFlavor(format string, flavor Flavor, initialValue .
 	return
 }
 
-// Value returns the value of the arg.
-// The arg must be the value returned by `Add`.
-func (args *Args) Value(arg string) interface{} {
+func (args *Args) Value(arg string) any {
 	_, values := args.Compile(arg)
 
 	if len(values) == 0 {
@@ -238,7 +223,7 @@ func (args *Args) compileSuccessive(ctx *argsCompileContext, format string, offs
 	return format, offset + 1
 }
 
-func (args *Args) mergeSQLNamedArgs(ctx *argsCompileContext) []interface{} {
+func (args *Args) mergeSQLNamedArgs(ctx *argsCompileContext) []any {
 	if len(args.sqlNamedArgs) == 0 && len(ctx.NamedArgs) == 0 {
 		return ctx.Values
 	}
@@ -246,8 +231,6 @@ func (args *Args) mergeSQLNamedArgs(ctx *argsCompileContext) []interface{} {
 	values := ctx.Values
 	existingNames := make(map[string]struct{}, len(ctx.NamedArgs))
 
-	// Add all named args to values.
-	// Remove duplicated named args in this step.
 	for _, arg := range ctx.NamedArgs {
 		if _, ok := existingNames[arg.Name]; !ok {
 			existingNames[arg.Name] = struct{}{}
@@ -255,7 +238,6 @@ func (args *Args) mergeSQLNamedArgs(ctx *argsCompileContext) []interface{} {
 		}
 	}
 
-	// Stabilize the sequence to make it easier to write test cases.
 	ints := make([]int, 0, len(args.sqlNamedArgs))
 
 	for n, p := range args.sqlNamedArgs {
@@ -266,7 +248,7 @@ func (args *Args) mergeSQLNamedArgs(ctx *argsCompileContext) []interface{} {
 		ints = append(ints, p)
 	}
 
-	sort.Ints(ints)
+	slices.Sort(ints)
 
 	for _, i := range ints {
 		values = append(values, args.argValues.Load(i))
@@ -275,13 +257,12 @@ func (args *Args) mergeSQLNamedArgs(ctx *argsCompileContext) []interface{} {
 	return values
 }
 
-func parseNamedArgs(initialValue []interface{}) (values []interface{}, namedValues []sql.NamedArg) {
+func parseNamedArgs(initialValue []any) (values []any, namedValues []sql.NamedArg) {
 	if len(initialValue) == 0 {
 		values = initialValue
 		return
 	}
 
-	// sql.NamedArgs must be placed at the end of the initial value.
 	size := len(initialValue)
 	i := size
 
@@ -313,18 +294,30 @@ type argsCompileContext struct {
 	*stringBuilder
 
 	Flavor    Flavor
-	Values    []interface{}
+	Values    []any
 	NamedArgs []sql.NamedArg
 }
 
-func (ctx *argsCompileContext) WriteValue(arg interface{}) {
+var argsCompileContextPool = sync.Pool{
+	New: func() any {
+		return &argsCompileContext{stringBuilder: newStringBuilder()}
+	},
+}
+
+func releaseArgsCompileContext(ctx *argsCompileContext) {
+	ctx.Reset()
+	ctx.Values = nil
+	ctx.NamedArgs = nil
+	ctx.Flavor = invalidFlavor
+	argsCompileContextPool.Put(ctx)
+}
+
+func (ctx *argsCompileContext) WriteValue(arg any) {
 	switch a := arg.(type) {
 	case Builder:
 		s, values := a.BuildWithFlavor(ctx.Flavor, ctx.Values...)
 		ctx.WriteString(s)
 
-		// Add all values to ctx.
-		// Named args must be located at the end of values.
 		values, namedArgs := parseNamedArgs(values)
 		ctx.Values = values
 		ctx.NamedArgs = append(ctx.NamedArgs, namedArgs...)
@@ -363,11 +356,14 @@ func (ctx *argsCompileContext) WriteValue(arg interface{}) {
 		case MySQL, SQLite, CQL, ClickHouse, Presto, Informix, Doris:
 			ctx.WriteRune('?')
 		case PostgreSQL:
-			fmt.Fprintf(ctx, "$%d", len(ctx.Values)+1)
+			ctx.WriteString("$")
+			ctx.WriteInt(len(ctx.Values) + 1)
 		case SQLServer:
-			fmt.Fprintf(ctx, "@p%d", len(ctx.Values)+1)
+			ctx.WriteString("@p")
+			ctx.WriteInt(len(ctx.Values) + 1)
 		case Oracle:
-			fmt.Fprintf(ctx, ":%d", len(ctx.Values)+1)
+			ctx.WriteString(":")
+			ctx.WriteInt(len(ctx.Values) + 1)
 		default:
 			panic(fmt.Errorf("Args.CompileWithFlavor: invalid flavor %v (%v)", ctx.Flavor, int(ctx.Flavor)))
 		}
@@ -376,7 +372,7 @@ func (ctx *argsCompileContext) WriteValue(arg interface{}) {
 	}
 }
 
-func (ctx *argsCompileContext) WriteValues(values []interface{}, sep string) {
+func (ctx *argsCompileContext) WriteValues(values []any, sep string) {
 	if len(values) == 0 {
 		return
 	}
@@ -390,12 +386,12 @@ func (ctx *argsCompileContext) WriteValues(values []interface{}, sep string) {
 }
 
 type valueStore struct {
-	Values []interface{}
+	Values []any
 }
 
 func init() {
-	// The values in valueStore should be shadow-copied to avoid unnecessary cost.
-	t := reflect.TypeOf(valueStore{})
+
+	t := reflect.TypeFor[valueStore]()
 	clone.SetCustomFunc(t, func(allocator *clone.Allocator, old, new reflect.Value) {
 		values := old.FieldByName("Values")
 		newValues := allocator.Clone(values)
@@ -411,14 +407,12 @@ func (as *valueStore) Len() int {
 	return len(as.Values)
 }
 
-// Add adds an arg to argsValues and returns its index.
-func (as *valueStore) Add(arg interface{}) int {
+func (as *valueStore) Add(arg any) int {
 	as.Values = append(as.Values, arg)
 	return len(as.Values) - 1
 }
 
-// Set sets the arg value by index.
-func (as *valueStore) Set(index int, arg interface{}) {
+func (as *valueStore) Set(index int, arg any) {
 	if as == nil || index < 0 || index >= len(as.Values) {
 		return
 	}
@@ -426,9 +420,7 @@ func (as *valueStore) Set(index int, arg interface{}) {
 	as.Values[index] = arg
 }
 
-// Load returns the arg value by index.
-// Returns nil if index is out of range or as itself is nil.
-func (as *valueStore) Load(index int) interface{} {
+func (as *valueStore) Load(index int) any {
 	if as == nil || index < 0 || index >= len(as.Values) {
 		return nil
 	}

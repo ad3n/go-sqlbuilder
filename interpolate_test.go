@@ -21,39 +21,39 @@ func (v errorValuer) Value() (driver.Value, error) {
 }
 
 func TestFlavorInterpolate(t *testing.T) {
-	dt := time.Date(2019, 4, 24, 12, 23, 34, 123456789, time.FixedZone("CST", 8*60*60)) // 2019-04-24 12:23:34.987654321 CST
+	dt := time.Date(2019, 4, 24, 12, 23, 34, 123456789, time.FixedZone("CST", 8*60*60))
 	_, errOutOfRange := strconv.ParseInt("12345678901234567890", 10, 32)
 	byteArr := [...]byte{'f', 'o', 'o'}
 	cases := []struct {
 		Flavor Flavor
 		SQL    string
-		Args   []interface{}
+		Args   []any
 		Query  string
 		Err    error
 	}{
 		{
 			MySQL,
-			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []interface{}{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
+			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []any{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
 			"SELECT * FROM a WHERE name = 'I\\'m fine' AND state IN (42, 8, -16, 32, 64)", nil,
 		},
 		{
 			MySQL,
-			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []interface{}{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
+			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []any{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
 			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN ('\\r\\n\\b\\t\\Z\\0\\\\\\\"\\'', '?', 42, 8, 16, 32, 64)", nil,
 		},
 		{
 			MySQL,
-			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []interface{}{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
+			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []any{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
 			"SELECT TRUE, FALSE, 1.234567, 9.87654321, NULL, _binary'I\\'m bytes', '2019-04-24 12:23:34.123457', '0000-00-00', NULL", nil,
 		},
 		{
 			MySQL,
-			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []interface{}{MySQL},
+			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []any{MySQL},
 			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\'MySQL'", nil,
 		},
 		{
 			MySQL,
-			"SELECT ?", []interface{}{byteArr},
+			"SELECT ?", []any{byteArr},
 			"SELECT _binary'foo'", nil,
 		},
 		{
@@ -63,43 +63,43 @@ func TestFlavorInterpolate(t *testing.T) {
 		},
 		{
 			MySQL,
-			"SELECT ?", []interface{}{complex(1, 2)},
+			"SELECT ?", []any{complex(1, 2)},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			MySQL,
-			"SELECT ?", []interface{}{[]complex128{complex(1, 2)}},
+			"SELECT ?", []any{[]complex128{complex(1, 2)}},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			MySQL,
-			"SELECT ?", []interface{}{errorValuer(1)},
+			"SELECT ?", []any{errorValuer(1)},
 			"", ErrErrorValuer,
 		},
 
 		{
 			PostgreSQL,
-			"SELECT * FROM a WHERE name = $3 AND state IN ($2, $4, $1, $6, $5)", []interface{}{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
+			"SELECT * FROM a WHERE name = $3 AND state IN ($2, $4, $1, $6, $5)", []any{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
 			"SELECT * FROM a WHERE name = 8 AND state IN (42, -16, E'I\\'m fine', 64, 32)", nil,
 		},
 		{
 			PostgreSQL,
-			"SELECT * FROM $abc$$1$abc$1$1 WHERE name = \"$1\" AND state IN ($2, '$1', $3, $6, $5, $4, $2) $3", []interface{}{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
+			"SELECT * FROM $abc$$1$abc$1$1 WHERE name = \"$1\" AND state IN ($2, '$1', $3, $6, $5, $4, $2) $3", []any{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
 			"SELECT * FROM $abc$$1$abc$1E'\\r\\n\\b\\t\\Z\\0\\\\\\\"\\'' WHERE name = \"$1\" AND state IN (42, '$1', 8, 64, 32, 16, 42) 8", nil,
 		},
 		{
 			PostgreSQL,
-			"SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $11, $a", []interface{}{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil, 10, 11, 12},
+			"SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $11, $a", []any{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil, 10, 11, 12},
 			"SELECT TRUE, FALSE, 1.234567, 9.87654321, NULL, E'\\\\x49276D206279746573'::bytea, '2019-04-24 12:23:34.123457 CST', '0000-00-00', NULL, 11, $a", nil,
 		},
 		{
 			PostgreSQL,
-			"SELECT '\\'$1', \"\\\"$1\", `$1`, \\$1a, $$1$$, $a $b$ $a $ $1$b$1$1 $a$ $", []interface{}{MySQL},
+			"SELECT '\\'$1', \"\\\"$1\", `$1`, \\$1a, $$1$$, $a $b$ $a $ $1$b$1$1 $a$ $", []any{MySQL},
 			"SELECT '\\'$1', \"\\\"$1\", `E'MySQL'`, \\E'MySQL'a, $$1$$, $a $b$ $a $ $1$b$1E'MySQL' $a$ $", nil,
 		},
 		{
 			PostgreSQL,
-			"SELECT * FROM a WHERE name = 'Huan''Du''$1' AND desc = $1", []interface{}{"c'mon"},
+			"SELECT * FROM a WHERE name = 'Huan''Du''$1' AND desc = $1", []any{"c'mon"},
 			"SELECT * FROM a WHERE name = 'Huan''Du''$1' AND desc = E'c\\'mon'", nil,
 		},
 		{
@@ -109,7 +109,7 @@ func TestFlavorInterpolate(t *testing.T) {
 		},
 		{
 			PostgreSQL,
-			"SELECT $1", []interface{}{complex(1, 2)},
+			"SELECT $1", []any{complex(1, 2)},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
@@ -120,43 +120,43 @@ func TestFlavorInterpolate(t *testing.T) {
 
 		{
 			SQLite,
-			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []interface{}{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
+			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []any{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
 			"SELECT * FROM a WHERE name = 'I''m fine' AND state IN (42, 8, -16, 32, 64)", nil,
 		},
 		{
 			SQLite,
-			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []interface{}{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
+			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []any{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
 			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN ('\r\n\b\t\x1a'||char(0)||'\\\"''', '?', 42, 8, 16, 32, 64)", nil,
 		},
 		{
 			SQLite,
-			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []interface{}{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
+			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []any{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
 			"SELECT TRUE, FALSE, 1.234567, 9.87654321, NULL, X'49276D206279746573', '2019-04-24 12:23:34.123', '0000-00-00', NULL", nil,
 		},
 		{
 			SQLite,
-			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []interface{}{SQLite},
+			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []any{SQLite},
 			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\'SQLite'", nil,
 		},
 
 		{
 			SQLServer,
-			"SELECT * FROM a WHERE name = @p1 AND state IN (@p3, @P2, @p4, @P6, @p5)", []interface{}{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
+			"SELECT * FROM a WHERE name = @p1 AND state IN (@p3, @P2, @p4, @P6, @p5)", []any{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
 			"SELECT * FROM a WHERE name = N'I''m fine' AND state IN (8, 42, -16, 64, 32)", nil,
 		},
 		{
 			SQLServer,
-			"SELECT * FROM \"a@p1\" WHERE name = '@p1' AND state IN (@p2, '@p1', @p1, @p3, @p4, @p5, @p6)", []interface{}{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
+			"SELECT * FROM \"a@p1\" WHERE name = '@p1' AND state IN (@p2, '@p1', @p1, @p3, @p4, @p5, @p6)", []any{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
 			"SELECT * FROM \"a@p1\" WHERE name = '@p1' AND state IN (42, '@p1', N'\r\n\b\t\x1a\x00\\\"''', 8, 16, 32, 64)", nil,
 		},
 		{
 			SQLServer,
-			"SELECT @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9", []interface{}{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
+			"SELECT @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9", []any{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
 			"SELECT TRUE, FALSE, 1.234567, 9.87654321, NULL, 0x49276D206279746573, '2019-04-24 12:23:34.123457 +08:00', '0000-00-00', NULL", nil,
 		},
 		{
 			SQLServer,
-			"SELECT '\\'@p1', \"\\\"@p1\", \\@p1, @abc", []interface{}{SQLServer},
+			"SELECT '\\'@p1', \"\\\"@p1\", \\@p1, @abc", []any{SQLServer},
 			"SELECT '\\'@p1', \"\\\"@p1\", \\N'SQLServer', @abc", nil,
 		},
 		{
@@ -166,22 +166,22 @@ func TestFlavorInterpolate(t *testing.T) {
 		},
 		{
 			CQL,
-			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []interface{}{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
+			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []any{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
 			"SELECT * FROM a WHERE name = 'I''m fine' AND state IN (42, 8, -16, 32, 64)", nil,
 		},
 		{
 			CQL,
-			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []interface{}{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
+			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []any{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
 			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN ('\\r\\n\\b\\t\\Z\\0\\\\\\\"''', '?', 42, 8, 16, 32, 64)", nil,
 		},
 		{
 			CQL,
-			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []interface{}{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
+			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []any{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
 			"SELECT TRUE, FALSE, 1.234567, 9.87654321, NULL, 0x49276D206279746573, '2019-04-24 12:23:34.123457+0800', '0000-00-00', NULL", nil,
 		},
 		{
 			CQL,
-			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []interface{}{CQL},
+			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []any{CQL},
 			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\'CQL'", nil,
 		},
 		{
@@ -191,32 +191,32 @@ func TestFlavorInterpolate(t *testing.T) {
 		},
 		{
 			CQL,
-			"SELECT ?", []interface{}{complex(1, 2)},
+			"SELECT ?", []any{complex(1, 2)},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			ClickHouse,
-			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []interface{}{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
+			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []any{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
 			"SELECT * FROM a WHERE name = 'I\\'m fine' AND state IN (42, 8, -16, 32, 64)", nil,
 		},
 		{
 			ClickHouse,
-			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []interface{}{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
+			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []any{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
 			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN ('\\r\\n\\b\\t\\Z\\0\\\\\\\"\\'', '?', 42, 8, 16, 32, 64)", nil,
 		},
 		{
 			ClickHouse,
-			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []interface{}{true, false, float32(1.234567), 9.87654321, []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
+			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []any{true, false, float32(1.234567), 9.87654321, []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
 			"SELECT TRUE, FALSE, 1.234567, 9.87654321, NULL, unhex('49276D206279746573'), '2019-04-24 12:23:34.123457', '0000-00-00', NULL", nil,
 		},
 		{
 			ClickHouse,
-			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []interface{}{MySQL},
+			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []any{MySQL},
 			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\'MySQL'", nil,
 		},
 		{
 			ClickHouse,
-			"SELECT ?", []interface{}{byteArr},
+			"SELECT ?", []any{byteArr},
 			"SELECT unhex('666F6F')", nil,
 		},
 		{
@@ -226,42 +226,42 @@ func TestFlavorInterpolate(t *testing.T) {
 		},
 		{
 			ClickHouse,
-			"SELECT ?", []interface{}{complex(1, 2)},
+			"SELECT ?", []any{complex(1, 2)},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			ClickHouse,
-			"SELECT ?", []interface{}{[]complex128{complex(1, 2)}},
+			"SELECT ?", []any{[]complex128{complex(1, 2)}},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			ClickHouse,
-			"SELECT ?", []interface{}{errorValuer(1)},
+			"SELECT ?", []any{errorValuer(1)},
 			"", ErrErrorValuer,
 		},
 		{
 			Presto,
-			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []interface{}{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
+			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []any{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
 			"SELECT * FROM a WHERE name = 'I''m fine' AND state IN (42, 8, -16, 32, 64)", nil,
 		},
 		{
 			Presto,
-			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []interface{}{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
+			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []any{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
 			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN ('\r\n\b\t\x1a\x00\\\"''', '?', 42, 8, 16, 32, 64)", nil,
 		},
 		{
 			Presto,
-			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []interface{}{true, false, float32(1.234567), 9.87654321, []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
+			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []any{true, false, float32(1.234567), 9.87654321, []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
 			"SELECT TRUE, FALSE, 1.234567, 9.87654321, NULL, from_hex('49276D206279746573'), '2019-04-24 12:23:34.123', '0000-00-00', NULL", nil,
 		},
 		{
 			Presto,
-			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []interface{}{MySQL},
+			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []any{MySQL},
 			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\'MySQL'", nil,
 		},
 		{
 			Presto,
-			"SELECT ?", []interface{}{byteArr},
+			"SELECT ?", []any{byteArr},
 			"SELECT from_hex('666F6F')", nil,
 		},
 		{
@@ -271,43 +271,43 @@ func TestFlavorInterpolate(t *testing.T) {
 		},
 		{
 			Presto,
-			"SELECT ?", []interface{}{complex(1, 2)},
+			"SELECT ?", []any{complex(1, 2)},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			Presto,
-			"SELECT ?", []interface{}{[]complex128{complex(1, 2)}},
+			"SELECT ?", []any{[]complex128{complex(1, 2)}},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			Presto,
-			"SELECT ?", []interface{}{errorValuer(1)},
+			"SELECT ?", []any{errorValuer(1)},
 			"", ErrErrorValuer,
 		},
 
 		{
 			Oracle,
-			"SELECT * FROM a WHERE name = :3 AND state IN (:2, :4, :1, :6, :5)", []interface{}{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
+			"SELECT * FROM a WHERE name = :3 AND state IN (:2, :4, :1, :6, :5)", []any{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
 			"SELECT * FROM a WHERE name = 8 AND state IN (42, -16, 'I''m fine', 64, 32)", nil,
 		},
 		{
 			Oracle,
-			"SELECT * FROM :abc::1:abc:1:1 WHERE name = \":1\" AND state IN (:2, ':1', :3, :6, :5, :4, :2) :3", []interface{}{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
+			"SELECT * FROM :abc::1:abc:1:1 WHERE name = \":1\" AND state IN (:2, ':1', :3, :6, :5, :4, :2) :3", []any{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
 			"SELECT * FROM :abc::1:abc:1'\r\n\b\t\x1a\x00\\\"''' WHERE name = \":1\" AND state IN (42, ':1', 8, 64, 32, 16, 42) 8", nil,
 		},
 		{
 			Oracle,
-			"SELECT :1, :2, :3, :4, :5, :6, :7, :8, :9, :11, :a", []interface{}{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil, 10, 11, 12},
+			"SELECT :1, :2, :3, :4, :5, :6, :7, :8, :9, :11, :a", []any{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil, 10, 11, 12},
 			"SELECT 1, 0, 1.234567, 9.87654321, NULL, hextoraw('49276D206279746573'), to_timestamp('2019-04-24 12:23:34.123457', 'YYYY-MM-DD HH24:MI:SS.FF'), '0000-00-00', NULL, 11, :a", nil,
 		},
 		{
 			Oracle,
-			"SELECT '\\':1', \"\\\":1\", `:1`, \\:1a, ::1::, :a :b: :a : :1:b:1:1 :a: :", []interface{}{Oracle},
+			"SELECT '\\':1', \"\\\":1\", `:1`, \\:1a, ::1::, :a :b: :a : :1:b:1:1 :a: :", []any{Oracle},
 			"SELECT '\\':1', \"\\\":1\", `'Oracle'`, \\'Oracle'a, ::1::, :a :b: :a : :1:b:1'Oracle' :a: :", nil,
 		},
 		{
 			Oracle,
-			"SELECT * FROM a WHERE name = 'Huan''Du'':1' AND desc = :1", []interface{}{"c'mon"},
+			"SELECT * FROM a WHERE name = 'Huan''Du'':1' AND desc = :1", []any{"c'mon"},
 			"SELECT * FROM a WHERE name = 'Huan''Du'':1' AND desc = 'c''mon'", nil,
 		},
 		{
@@ -317,7 +317,7 @@ func TestFlavorInterpolate(t *testing.T) {
 		},
 		{
 			Oracle,
-			"SELECT :1", []interface{}{complex(1, 2)},
+			"SELECT :1", []any{complex(1, 2)},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
@@ -327,29 +327,29 @@ func TestFlavorInterpolate(t *testing.T) {
 		},
 		{
 			Informix,
-			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []interface{}{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
+			"SELECT * FROM a WHERE name = ? AND state IN (?, ?, ?, ?, ?)", []any{"I'm fine", 42, int8(8), int16(-16), int32(32), int64(64)},
 			"SELECT * FROM a WHERE name = 'I''m fine' AND state IN (42, 8, -16, 32, 64)", nil,
 		},
 		{
 			Informix,
-			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []interface{}{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
+			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN (?, '?', ?, ?, ?, ?, ?)", []any{"\r\n\b\t\x1a\x00\\\"'", uint(42), uint8(8), uint16(16), uint32(32), uint64(64), "useless"},
 			"SELECT * FROM `a?` WHERE name = \"?\" AND state IN ('\r\n\b\t\x1a\x00\\\"''', '?', 42, 8, 16, 32, 64)", nil,
 		},
 		{
 			Informix,
-			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []interface{}{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
-			// "SELECT TRUE, FALSE, 1.234567, 9.87654321, NULL, _binary'I\\'m bytes', '2019-04-24 12:23:34.123457', '0000-00-00', NULL", nil,
+			"SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?", []any{true, false, float32(1.234567), float64(9.87654321), []byte(nil), []byte("I'm bytes"), dt, time.Time{}, nil},
+
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			Informix,
-			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []interface{}{Informix},
+			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\?", []any{Informix},
 			"SELECT '\\'?', \"\\\"?\", `\\`?`, \\'Informix'", nil,
 		},
 		{
 			Informix,
-			"SELECT ?", []interface{}{byteArr},
-			// "SELECT _binary'foo'", nil,
+			"SELECT ?", []any{byteArr},
+
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
@@ -359,22 +359,22 @@ func TestFlavorInterpolate(t *testing.T) {
 		},
 		{
 			Informix,
-			"SELECT ?", []interface{}{complex(1, 2)},
+			"SELECT ?", []any{complex(1, 2)},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			Informix,
-			"SELECT ?", []interface{}{[]complex128{complex(1, 2)}},
+			"SELECT ?", []any{[]complex128{complex(1, 2)}},
 			"", ErrInterpolateUnsupportedArgs,
 		},
 		{
 			Informix,
-			"SELECT ?", []interface{}{errorValuer(1)},
+			"SELECT ?", []any{errorValuer(1)},
 			"", ErrErrorValuer,
 		},
 		{
 			Doris,
-			"SELECT ?", []interface{}{errorValuer(1)},
+			"SELECT ?", []any{errorValuer(1)},
 			"", ErrErrorValuer,
 		},
 	}
@@ -406,10 +406,11 @@ func TestANSIInterpolationEscapesQuotes(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.flavor.String(), func(t *testing.T) {
-			query, err := tc.flavor.Interpolate(tc.sql, []interface{}{payload})
+			query, err := tc.flavor.Interpolate(tc.sql, []any{payload})
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if query != tc.expected {
 				t.Fatalf("unexpected query: %q", query)
 			}
@@ -420,96 +421,95 @@ func TestANSIInterpolationEscapesQuotes(t *testing.T) {
 func TestTypedNilInterpolation(t *testing.T) {
 	a := assert.New(t)
 
-	// Test various typed nil pointers
 	cases := []struct {
 		name     string
 		flavor   Flavor
 		sql      string
-		args     []interface{}
+		args     []any
 		expected string
 	}{
 		{
 			name:     "string pointer nil",
 			flavor:   MySQL,
 			sql:      "SELECT ?",
-			args:     []interface{}{(*string)(nil)},
+			args:     []any{(*string)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "int pointer nil",
 			flavor:   MySQL,
 			sql:      "SELECT ?",
-			args:     []interface{}{(*int)(nil)},
+			args:     []any{(*int)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "float64 pointer nil",
 			flavor:   MySQL,
 			sql:      "SELECT ?",
-			args:     []interface{}{(*float64)(nil)},
+			args:     []any{(*float64)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "time.Time pointer nil",
 			flavor:   MySQL,
 			sql:      "SELECT ?",
-			args:     []interface{}{(*time.Time)(nil)},
+			args:     []any{(*time.Time)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "byte slice pointer nil",
 			flavor:   MySQL,
 			sql:      "SELECT ?",
-			args:     []interface{}{(*[]byte)(nil)},
+			args:     []any{(*[]byte)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "PostgreSQL string pointer nil",
 			flavor:   PostgreSQL,
 			sql:      "SELECT $1",
-			args:     []interface{}{(*string)(nil)},
+			args:     []any{(*string)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "SQLite int pointer nil",
 			flavor:   SQLite,
 			sql:      "SELECT ?",
-			args:     []interface{}{(*int)(nil)},
+			args:     []any{(*int)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "Oracle float pointer nil",
 			flavor:   Oracle,
 			sql:      "SELECT :1",
-			args:     []interface{}{(*float64)(nil)},
+			args:     []any{(*float64)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "mixed nil types",
 			flavor:   MySQL,
 			sql:      "SELECT ?, ?, ?, ?",
-			args:     []interface{}{(*string)(nil), nil, (*int)(nil), (*[]byte)(nil)},
+			args:     []any{(*string)(nil), nil, (*int)(nil), (*[]byte)(nil)},
 			expected: "SELECT NULL, NULL, NULL, NULL",
 		},
 		{
 			name:     "interface pointer nil",
 			flavor:   MySQL,
 			sql:      "SELECT ?",
-			args:     []interface{}{(*fmt.Stringer)(nil)},
+			args:     []any{(*fmt.Stringer)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "slice pointer nil",
 			flavor:   MySQL,
 			sql:      "SELECT ?",
-			args:     []interface{}{(*[]int)(nil)},
+			args:     []any{(*[]int)(nil)},
 			expected: "SELECT NULL",
 		},
 		{
 			name:     "map pointer nil",
 			flavor:   MySQL,
 			sql:      "SELECT ?",
-			args:     []interface{}{(*map[string]int)(nil)},
+			args:     []any{(*map[string]int)(nil)},
 			expected: "SELECT NULL",
 		},
 	}

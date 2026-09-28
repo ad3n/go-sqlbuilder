@@ -8,7 +8,7 @@ import (
 	"math"
 	"reflect"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -46,7 +46,7 @@ const (
 
 var optRegex = regexp.MustCompile(`(?P<` + optName + `>\w+)(\((?P<` + optParams + `>.*)\))?`)
 
-var typeOfSQLDriverValuer = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
+var typeOfSQLDriverValuer = reflect.TypeFor[driver.Valuer]()
 
 // Struct represents a struct type.
 //
@@ -63,10 +63,7 @@ type Struct struct {
 
 var emptyStruct Struct
 
-// NewStruct analyzes type information in structValue
-// and creates a new Struct with all structValue fields.
-// If structValue is not a struct, NewStruct returns a dummy Struct.
-func NewStruct(structValue interface{}) *Struct {
+func NewStruct(structValue any) *Struct {
 	t := reflect.TypeOf(structValue)
 	t = dereferencedType(t)
 
@@ -149,7 +146,6 @@ func (s *Struct) mergeWithTags(with []string) {
 		return
 	}
 
-	// Merge with tags.
 	withTags = make([]string, 0, len(s.withTags)+len(newTags))
 	withTags = append(withTags, s.withTags...)
 
@@ -157,7 +153,7 @@ func (s *Struct) mergeWithTags(with []string) {
 		withTags = append(withTags, with[idx])
 	}
 
-	sort.Strings(withTags)
+	slices.Sort(withTags)
 	withTags = removeDuplicatedTags(withTags)
 	s.withTags = withTags
 }
@@ -202,7 +198,6 @@ func (s *Struct) mergeWithoutTags(without []string) {
 
 		}
 
-		// Merge without tags.
 		tags := make([]string, 0, len(withoutTags)+len(newTags))
 		tags = append(tags, withoutTags...)
 
@@ -213,10 +208,9 @@ func (s *Struct) mergeWithoutTags(without []string) {
 		withoutTags = tags
 	}
 
-	sort.Strings(withoutTags)
+	slices.Sort(withoutTags)
 	withoutTags = removeDuplicatedTags(withoutTags)
 
-	// Filter out useless tags in s.withTags.
 	kept := make([]int, 0, len(withTags))
 
 	for i, tag := range withTags {
@@ -237,7 +231,6 @@ func (s *Struct) mergeWithoutTags(without []string) {
 		withTags = nil
 	}
 
-	// Update with and without tags.
 	s.withTags = withTags
 	s.withoutTags = withoutTags
 }
@@ -247,8 +240,8 @@ func hasTag(tags []string, tag string) bool {
 		return false
 	}
 
-	i := sort.SearchStrings(tags, tag)
-	return i < len(tags) && tags[i] == tag
+	_, found := slices.BinarySearch(tags, tag)
+	return found
 }
 
 func removeDuplicatedTags(tags []string) []string {
@@ -342,12 +335,7 @@ func parseTableAlias(table string) string {
 	return table[idx+1:]
 }
 
-// Update creates a new `UpdateBuilder` with table name.
-// By default, all exported fields of the s is assigned in UPDATE with the field values from value.
-// If value's type is not the same as that of s, Update returns a dummy `UpdateBuilder` with table name.
-//
-// Caller is responsible to set WHERE condition to match right record.
-func (s *Struct) Update(table string, value interface{}) *UpdateBuilder {
+func (s *Struct) Update(table string, value any) *UpdateBuilder {
 	return s.updateWithTags(table, s.withTags, s.withoutTags, value)
 }
 
@@ -359,11 +347,11 @@ func (s *Struct) Update(table string, value interface{}) *UpdateBuilder {
 //
 // Deprecated: It's recommended to use s.WithTag(tag).Update(...) instead of calling this method.
 // The former one is more readable and can be chained with other methods.
-func (s *Struct) UpdateForTag(table string, tag string, value interface{}) *UpdateBuilder {
+func (s *Struct) UpdateForTag(table string, tag string, value any) *UpdateBuilder {
 	return s.updateWithTags(table, []string{tag}, nil, value)
 }
 
-func (s *Struct) updateWithTags(table string, with, without []string, value interface{}) *UpdateBuilder {
+func (s *Struct) updateWithTags(table string, with, without []string, value any) *UpdateBuilder {
 	sfs := s.structFieldsParser()
 	tagged := sfs.FilterTags(with, without)
 
@@ -403,10 +391,11 @@ func (s *Struct) updateWithTags(table string, with, without []string, value inte
 			val = dereferencedFieldValue(val)
 		}
 
-		var data interface{}
+		var data any
 		if val.IsValid() {
 			data = val.Interface()
 		}
+
 		assignments = append(assignments, ub.Assign(sf.Quote(s.Flavor), data))
 	}
 
@@ -414,14 +403,7 @@ func (s *Struct) updateWithTags(table string, with, without []string, value inte
 	return ub
 }
 
-// InsertInto creates a new `InsertBuilder` with table name using verb INSERT INTO.
-// By default, all exported fields of s are set as columns by calling `InsertBuilder#Cols`,
-// and value is added as a list of values by calling `InsertBuilder#Values`.
-//
-// InsertInto never returns any error.
-// If the type of any item in value is not expected, it will be ignored.
-// If value is an empty slice, `InsertBuilder#Values` will not be called.
-func (s *Struct) InsertInto(table string, value ...interface{}) *InsertBuilder {
+func (s *Struct) InsertInto(table string, value ...any) *InsertBuilder {
 	ib := s.Flavor.NewInsertBuilder()
 	ib.InsertInto(table)
 
@@ -429,14 +411,7 @@ func (s *Struct) InsertInto(table string, value ...interface{}) *InsertBuilder {
 	return ib
 }
 
-// InsertIgnoreInto creates a new `InsertBuilder` with table name using verb INSERT IGNORE INTO.
-// By default, all exported fields of s are set as columns by calling `InsertBuilder#Cols`,
-// and value is added as a list of values by calling `InsertBuilder#Values`.
-//
-// InsertIgnoreInto never returns any error.
-// If the type of any item in value is not expected, it will be ignored.
-// If value is an empty slice, `InsertBuilder#Values` will not be called.
-func (s *Struct) InsertIgnoreInto(table string, value ...interface{}) *InsertBuilder {
+func (s *Struct) InsertIgnoreInto(table string, value ...any) *InsertBuilder {
 	ib := s.Flavor.NewInsertBuilder()
 	ib.InsertIgnoreInto(table)
 
@@ -444,14 +419,7 @@ func (s *Struct) InsertIgnoreInto(table string, value ...interface{}) *InsertBui
 	return ib
 }
 
-// ReplaceInto creates a new `InsertBuilder` with table name using verb REPLACE INTO.
-// By default, all exported fields of s are set as columns by calling `InsertBuilder#Cols`,
-// and value is added as a list of values by calling `InsertBuilder#Values`.
-//
-// ReplaceInto never returns any error.
-// If the type of any item in value is not expected, it will be ignored.
-// If value is an empty slice, `InsertBuilder#Values` will not be called.
-func (s *Struct) ReplaceInto(table string, value ...interface{}) *InsertBuilder {
+func (s *Struct) ReplaceInto(table string, value ...any) *InsertBuilder {
 	ib := s.Flavor.NewInsertBuilder()
 	ib.ReplaceInto(table)
 
@@ -459,9 +427,7 @@ func (s *Struct) ReplaceInto(table string, value ...interface{}) *InsertBuilder 
 	return ib
 }
 
-// buildColsAndValuesForTag uses ib to set exported fields tagged with tag as columns
-// and add value as a list of values.
-func (s *Struct) buildColsAndValuesForTag(ib *InsertBuilder, with, without []string, value ...interface{}) {
+func (s *Struct) buildColsAndValuesForTag(ib *InsertBuilder, with, without []string, value ...any) {
 	sfs := s.structFieldsParser()
 	tagged := sfs.FilterTags(with, without)
 
@@ -485,7 +451,7 @@ func (s *Struct) buildColsAndValuesForTag(ib *InsertBuilder, with, without []str
 	}
 
 	cols := make([]string, 0, len(tagged.ForInsert))
-	values := make([][]interface{}, len(vs))
+	values := make([][]any, len(vs))
 	nilCols := make([]int, 0, len(tagged.ForInsert))
 
 	for _, sf := range tagged.ForInsert {
@@ -517,12 +483,11 @@ func (s *Struct) buildColsAndValuesForTag(ib *InsertBuilder, with, without []str
 		nilCols = append(nilCols, nilCnt)
 	}
 
-	// Try to filter out nil values if possible.
 	filteredCols := make([]string, 0, len(cols))
-	filteredValues := make([][]interface{}, len(values))
+	filteredValues := make([][]any, len(values))
 
 	for i, cnt := range nilCols {
-		// If all values are nil in a column, ignore the column completely.
+
 		if cnt == len(values) {
 			continue
 		}
@@ -551,7 +516,7 @@ func (s *Struct) buildColsAndValuesForTag(ib *InsertBuilder, with, without []str
 //
 // Deprecated: It's recommended to use s.WithTag(tag).InsertInto(...) instead of calling this method.
 // The former one is more readable and can be chained with other methods.
-func (s *Struct) InsertIntoForTag(table string, tag string, value ...interface{}) *InsertBuilder {
+func (s *Struct) InsertIntoForTag(table string, tag string, value ...any) *InsertBuilder {
 	ib := s.Flavor.NewInsertBuilder()
 	ib.InsertInto(table)
 
@@ -569,7 +534,7 @@ func (s *Struct) InsertIntoForTag(table string, tag string, value ...interface{}
 //
 // Deprecated: It's recommended to use s.WithTag(tag).InsertIgnoreInto(...) instead of calling this method.
 // The former one is more readable and can be chained with other methods.
-func (s *Struct) InsertIgnoreIntoForTag(table string, tag string, value ...interface{}) *InsertBuilder {
+func (s *Struct) InsertIgnoreIntoForTag(table string, tag string, value ...any) *InsertBuilder {
 	ib := s.Flavor.NewInsertBuilder()
 	ib.InsertIgnoreInto(table)
 
@@ -587,7 +552,7 @@ func (s *Struct) InsertIgnoreIntoForTag(table string, tag string, value ...inter
 //
 // Deprecated: It's recommended to use s.WithTag(tag).ReplaceInto(...) instead of calling this method.
 // The former one is more readable and can be chained with other methods.
-func (s *Struct) ReplaceIntoForTag(table string, tag string, value ...interface{}) *InsertBuilder {
+func (s *Struct) ReplaceIntoForTag(table string, tag string, value ...any) *InsertBuilder {
 	ib := s.Flavor.NewInsertBuilder()
 	ib.ReplaceInto(table)
 
@@ -604,9 +569,7 @@ func (s *Struct) DeleteFrom(table string) *DeleteBuilder {
 	return db
 }
 
-// Addr takes address of all exported fields of the s from the st.
-// The returned result can be used in `Row#Scan` directly.
-func (s *Struct) Addr(st interface{}) []interface{} {
+func (s *Struct) Addr(st any) []any {
 	return s.addrWithTags(s.withTags, s.withoutTags, st)
 }
 
@@ -617,11 +580,11 @@ func (s *Struct) Addr(st interface{}) []interface{} {
 //
 // Deprecated: It's recommended to use s.WithTag(tag).Addr(...) instead of calling this method.
 // The former one is more readable and can be chained with other methods.
-func (s *Struct) AddrForTag(tag string, st interface{}) []interface{} {
+func (s *Struct) AddrForTag(tag string, st any) []any {
 	return s.addrWithTags([]string{tag}, nil, st)
 }
 
-func (s *Struct) addrWithTags(with, without []string, st interface{}) []interface{} {
+func (s *Struct) addrWithTags(with, without []string, st any) []any {
 	sfs := s.structFieldsParser()
 	tagged := sfs.FilterTags(with, without)
 
@@ -632,9 +595,7 @@ func (s *Struct) addrWithTags(with, without []string, st interface{}) []interfac
 	return s.addrWithFields(tagged.ForRead, st)
 }
 
-// AddrWithCols takes address of all columns defined in cols from the st.
-// The returned value can be used in `Row#Scan` directly.
-func (s *Struct) AddrWithCols(cols []string, st interface{}) []interface{} {
+func (s *Struct) AddrWithCols(cols []string, st any) []any {
 	sfs := s.structFieldsParser()
 	tagged := sfs.FilterTags(s.withTags, s.withoutTags)
 
@@ -651,7 +612,7 @@ func (s *Struct) AddrWithCols(cols []string, st interface{}) []interface{} {
 	return s.addrWithFields(fields, st)
 }
 
-func (s *Struct) addrWithFields(fields []*structField, st interface{}) []interface{} {
+func (s *Struct) addrWithFields(fields []*structField, st any) []any {
 	v := reflect.ValueOf(st)
 	v = dereferencedValue(v)
 
@@ -659,7 +620,7 @@ func (s *Struct) addrWithFields(fields []*structField, st interface{}) []interfa
 		return nil
 	}
 
-	addrs := make([]interface{}, 0, len(fields))
+	addrs := make([]any, 0, len(fields))
 
 	for _, sf := range fields {
 		field, ok := fieldByIndex(v, sf.Index, true)
@@ -704,8 +665,7 @@ func (s *Struct) columnsWithTags(with, without []string) (cols []string) {
 	return
 }
 
-// Values returns a shadow copy of all exported fields in st.
-func (s *Struct) Values(st interface{}) []interface{} {
+func (s *Struct) Values(st any) []any {
 	return s.valuesWithTags(s.withTags, s.withoutTags, st)
 }
 
@@ -713,11 +673,11 @@ func (s *Struct) Values(st interface{}) []interface{} {
 //
 // Deprecated: It's recommended to use s.WithTag(tag).Values(...) instead of calling this method.
 // The former one is more readable and can be chained with other methods.
-func (s *Struct) ValuesForTag(tag string, value interface{}) (values []interface{}) {
+func (s *Struct) ValuesForTag(tag string, value any) (values []any) {
 	return s.valuesWithTags([]string{tag}, nil, value)
 }
 
-func (s *Struct) valuesWithTags(with, without []string, value interface{}) (values []interface{}) {
+func (s *Struct) valuesWithTags(with, without []string, value any) (values []any) {
 	sfs := s.structFieldsParser()
 	tagged := sfs.FilterTags(with, without)
 
@@ -732,7 +692,7 @@ func (s *Struct) valuesWithTags(with, without []string, value interface{}) (valu
 		return
 	}
 
-	values = make([]interface{}, 0, len(tagged.ForWrite))
+	values = make([]any, 0, len(tagged.ForWrite))
 
 	for _, sf := range tagged.ForWrite {
 		field, ok := fieldByIndex(v, sf.Index, false)
@@ -781,7 +741,7 @@ func (s *Struct) foreachWriteWithTags(with, without []string, trans func(dbtag s
 }
 
 func dereferencedType(t reflect.Type) reflect.Type {
-	for k := t.Kind(); k == reflect.Ptr || k == reflect.Interface; k = t.Kind() {
+	for k := t.Kind(); k == reflect.Pointer || k == reflect.Interface; k = t.Kind() {
 		t = t.Elem()
 	}
 
@@ -789,7 +749,7 @@ func dereferencedType(t reflect.Type) reflect.Type {
 }
 
 func dereferencedValue(v reflect.Value) reflect.Value {
-	for k := v.Kind(); k == reflect.Ptr || k == reflect.Interface; k = v.Kind() {
+	for k := v.Kind(); k == reflect.Pointer || k == reflect.Interface; k = v.Kind() {
 		v = v.Elem()
 	}
 
@@ -797,7 +757,7 @@ func dereferencedValue(v reflect.Value) reflect.Value {
 }
 
 func dereferencedFieldValue(v reflect.Value) reflect.Value {
-	for k := v.Kind(); k == reflect.Ptr || k == reflect.Interface; k = v.Kind() {
+	for k := v.Kind(); k == reflect.Pointer || k == reflect.Interface; k = v.Kind() {
 		if v.Type().Implements(typeOfSQLDriverValuer) {
 			break
 		}
@@ -816,9 +776,9 @@ func fieldByIndex(v reflect.Value, index []int, allocate bool) (reflect.Value, b
 	field := v
 
 	for i, idx := range index {
-		for field.Kind() == reflect.Ptr || field.Kind() == reflect.Interface {
+		for field.Kind() == reflect.Pointer || field.Kind() == reflect.Interface {
 			if field.IsNil() {
-				if !allocate || field.Kind() != reflect.Ptr {
+				if !allocate || field.Kind() != reflect.Pointer {
 					return reflect.Value{}, false
 				}
 
@@ -842,8 +802,6 @@ func fieldByIndex(v reflect.Value, index []int, allocate bool) (reflect.Value, b
 	return field, true
 }
 
-// isEmptyValue checks if v is zero.
-// Following code is borrowed from `IsZero` method in `reflect.Value` since Go 1.13.
 func isEmptyValue(v reflect.Value) bool {
 	if !v.IsValid() {
 		return true
@@ -868,13 +826,13 @@ func isEmptyValue(v reflect.Value) bool {
 			}
 		}
 		return true
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice, reflect.UnsafePointer:
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice, reflect.UnsafePointer:
 		return v.IsNil()
 	case reflect.String:
 		return v.Len() == 0
 	case reflect.Struct:
-		for i := 0; i < v.NumField(); i++ {
-			if !isEmptyValue(v.Field(i)) {
+		for _, field := range v.Fields() {
+			if !isEmptyValue(field) {
 				return false
 			}
 		}
