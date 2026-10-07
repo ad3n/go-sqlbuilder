@@ -74,7 +74,7 @@ func TestCompilePoolPanicCleanup(t *testing.T) {
 	ctx := argsCompileContextPool.Get().(*argsCompileContext)
 	defer releaseArgsCompileContext(ctx)
 
-	if ctx.String() != "" || ctx.builder.Cap() != 0 || ctx.Values != nil || ctx.NamedArgs != nil || ctx.Flavor != invalidFlavor {
+	if ctx.String() != "" || ctx.Cap() > maxCompileBufferCapacity || ctx.Values != nil || len(ctx.NamedArgs) != 0 || ctx.Flavor != invalidFlavor {
 		t.Fatal("acquired context retained data from a previous compile")
 	}
 

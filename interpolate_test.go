@@ -541,11 +541,13 @@ func TestInterpolateMillisecondRound(t *testing.T) {
 		{MySQL, half, "SELECT '2019-04-24 12:23:34.1235'"},
 		{MySQL, carry, "SELECT '2019-04-24 12:23:34.9995'"},
 	}
+
 	for _, tc := range cases {
-		got, err := tc.flavor.Interpolate("SELECT ?", []interface{}{tc.tm})
+		got, err := tc.flavor.Interpolate("SELECT ?", []any{tc.tm})
 		if err != nil {
 			t.Fatalf("%v %s: %s", tc.flavor, tc.tm, err)
 		}
+
 		if got != tc.want {
 			t.Errorf("%v %s: got %s, want %s", tc.flavor, tc.tm, got, tc.want)
 		}

@@ -15,9 +15,7 @@ import (
 	"github.com/huandu/go-clone"
 )
 
-// Args stores arguments associated with a SQL.
 type Args struct {
-	// The default flavor used by `Args#Compile`
 	Flavor Flavor
 
 	indexBase    int
@@ -135,16 +133,18 @@ func (args *Args) CompileWithFlavor(format string, flavor Flavor, initialValue .
 			break
 		}
 
-		if r := format[0]; r == '$' {
+		r := format[0]
+		switch {
+		case r == '$':
 			ctx.WriteRune('$')
 			format = format[1:]
-		} else if r == '{' {
+		case r == '{':
 			format = args.compileNamed(ctx, format)
-		} else if !args.onlyNamed && '0' <= r && r <= '9' {
+		case !args.onlyNamed && '0' <= r && r <= '9':
 			format, offset = args.compileDigits(ctx, format, offset)
-		} else if !args.onlyNamed && r == '?' {
+		case !args.onlyNamed && r == '?':
 			format, offset = args.compileSuccessive(ctx, format[1:], offset)
-		} else {
+		default:
 			ctx.WriteRune('$')
 		}
 
@@ -174,10 +174,8 @@ func (args *Args) compileNamed(ctx *argsCompileContext, format string) string {
 	i := 1
 
 	for ; i < len(format) && format[i] != '}'; i++ {
-		// Nothing.
 	}
 
-	// Invalid $ format. Ignore it.
 	if i == len(format) {
 		return format
 	}
@@ -196,7 +194,6 @@ func (args *Args) compileDigits(ctx *argsCompileContext, format string, offset i
 	i := 1
 
 	for ; i < len(format) && '0' <= format[i] && format[i] <= '9'; i++ {
-		// Nothing.
 	}
 
 	digits := format[:i]
@@ -291,23 +288,31 @@ func parseNamedArgs(initialValue []any) (values []any, namedValues []sql.NamedAr
 }
 
 type argsCompileContext struct {
-	*stringBuilder
+	compileBuffer
 
-	Flavor    Flavor
 	Values    []any
 	NamedArgs []sql.NamedArg
+
+	Flavor Flavor
 }
+
+const maxCompileNamedArgsCapacity = 64
 
 var argsCompileContextPool = sync.Pool{
 	New: func() any {
-		return &argsCompileContext{stringBuilder: newStringBuilder()}
+		return new(argsCompileContext{compileBuffer: compileBuffer{data: make([]byte, 0, 64)}})
 	},
 }
 
 func releaseArgsCompileContext(ctx *argsCompileContext) {
 	ctx.Reset()
 	ctx.Values = nil
-	ctx.NamedArgs = nil
+	clear(ctx.NamedArgs)
+	if cap(ctx.NamedArgs) > maxCompileNamedArgsCapacity {
+		ctx.NamedArgs = nil
+	}
+
+	ctx.NamedArgs = ctx.NamedArgs[:0]
 	ctx.Flavor = invalidFlavor
 	argsCompileContextPool.Put(ctx)
 }
@@ -390,7 +395,6 @@ type valueStore struct {
 }
 
 func init() {
-
 	t := reflect.TypeFor[valueStore]()
 	clone.SetCustomFunc(t, func(allocator *clone.Allocator, old, new reflect.Value) {
 		values := old.FieldByName("Values")

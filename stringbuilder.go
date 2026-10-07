@@ -21,8 +21,6 @@ func newStringBuilder() *stringBuilder {
 	}
 }
 
-// WriteLeadingString writes s to internal buffer.
-// If it's not the first time to write the string, a blank (" ") will be written before s.
 func (sb *stringBuilder) WriteLeadingString(s string) {
 	if sb.builder.Len() > 0 {
 		sb.builder.WriteString(" ")
@@ -40,6 +38,20 @@ func (sb *stringBuilder) WriteStrings(ss []string, sep string) {
 		return
 	}
 
+	size, count := 0, 0
+	for _, s := range ss {
+		if s == "" {
+			continue
+		}
+
+		size += len(s)
+		count++
+	}
+
+	if count > 0 {
+		sb.Grow(size + (count-1)*len(sep))
+	}
+
 	firstAdded := false
 	if len(ss[0]) != 0 {
 		sb.WriteString(ss[0])
@@ -51,6 +63,7 @@ func (sb *stringBuilder) WriteStrings(ss []string, sep string) {
 			if firstAdded {
 				sb.WriteString(sep)
 			}
+
 			sb.WriteString(s)
 			firstAdded = true
 		}
@@ -58,6 +71,20 @@ func (sb *stringBuilder) WriteStrings(ss []string, sep string) {
 }
 
 func (sb *stringBuilder) WriteStringsPrefixed(prefix string, ss []string, sep string) {
+	size, count := 0, 0
+	for _, s := range ss {
+		if prefix == "" && s == "" {
+			continue
+		}
+
+		size += len(prefix) + len(s)
+		count++
+	}
+
+	if count > 0 {
+		sb.Grow(size + (count-1)*len(sep))
+	}
+
 	firstAdded := false
 	for _, s := range ss {
 		if len(prefix) == 0 && len(s) == 0 {
@@ -99,8 +126,6 @@ func (sb *stringBuilder) Grow(n int) {
 	sb.builder.Grow(n)
 }
 
-// filterEmptyStrings removes empty strings from ss.
-// As ss rarely contains empty strings, filterEmptyStrings tries to avoid allocation if possible.
 func filterEmptyStrings(ss []string) []string {
 	emptyStrings := 0
 
