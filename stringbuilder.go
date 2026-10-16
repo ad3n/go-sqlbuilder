@@ -10,15 +10,13 @@ import (
 )
 
 type stringBuilder struct {
-	builder *strings.Builder
+	builder strings.Builder
 }
 
 var _ io.Writer = new(stringBuilder)
 
 func newStringBuilder() *stringBuilder {
-	return &stringBuilder{
-		builder: &strings.Builder{},
-	}
+	return &stringBuilder{}
 }
 
 func (sb *stringBuilder) WriteLeadingString(s string) {

@@ -1,6 +1,6 @@
 module github.com/ad3n/go-sqlbuilder
 
-go 1.26.0
+go 1.27.0
 
 require (
 	github.com/huandu/go-assert v1.1.6

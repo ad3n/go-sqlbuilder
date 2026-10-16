@@ -14,7 +14,8 @@ const (
 	insertMarkerAfterReturning
 )
 
-// NewInsertBuilder creates a new INSERT builder.
+const maxInsertPreallocationRows = 1024
+
 func NewInsertBuilder() *InsertBuilder {
 	return DefaultFlavor.NewInsertBuilder()
 }
@@ -28,13 +29,10 @@ func newInsertBuilder() *InsertBuilder {
 	}
 }
 
-// Clone returns a deep copy of InsertBuilder.
-// It's useful when you want to create a base builder and clone it to build similar queries.
 func (ib *InsertBuilder) Clone() *InsertBuilder {
 	return clone.Clone(ib).(*InsertBuilder)
 }
 
-// InsertBuilder is a builder to build INSERT.
 type InsertBuilder struct {
 	verb      string
 	table     string
@@ -52,37 +50,29 @@ type InsertBuilder struct {
 
 var _ Builder = new(InsertBuilder)
 
-// InsertInto sets table name in INSERT.
 func InsertInto(table string) *InsertBuilder {
 	return DefaultFlavor.NewInsertBuilder().InsertInto(table)
 }
 
-// InsertInto sets table name in INSERT.
 func (ib *InsertBuilder) InsertInto(table string) *InsertBuilder {
 	ib.table = Escape(table)
 	ib.marker = insertMarkerAfterInsertInto
 	return ib
 }
 
-// InsertIgnoreInto sets table name in INSERT IGNORE.
 func InsertIgnoreInto(table string) *InsertBuilder {
 	return DefaultFlavor.NewInsertBuilder().InsertIgnoreInto(table)
 }
 
-// InsertIgnoreInto sets table name in INSERT IGNORE.
 func (ib *InsertBuilder) InsertIgnoreInto(table string) *InsertBuilder {
 	ib.args.Flavor.PrepareInsertIgnore(table, ib)
 	return ib
 }
 
-// ReplaceInto sets table name and changes the verb of ib to REPLACE.
-// REPLACE INTO is a MySQL extension to the SQL standard.
 func ReplaceInto(table string) *InsertBuilder {
 	return DefaultFlavor.NewInsertBuilder().ReplaceInto(table)
 }
 
-// ReplaceInto sets table name and changes the verb of ib to REPLACE.
-// REPLACE INTO is a MySQL extension to the SQL standard.
 func (ib *InsertBuilder) ReplaceInto(table string) *InsertBuilder {
 	ib.verb = "REPLACE"
 	ib.table = Escape(table)
@@ -90,14 +80,12 @@ func (ib *InsertBuilder) ReplaceInto(table string) *InsertBuilder {
 	return ib
 }
 
-// Cols sets columns in INSERT.
 func (ib *InsertBuilder) Cols(col ...string) *InsertBuilder {
 	ib.cols = EscapeAll(col...)
 	ib.marker = insertMarkerAfterCols
 	return ib
 }
 
-// Select returns a new SelectBuilder to build a SELECT statement inside the INSERT INTO.
 func (isb *InsertBuilder) Select(col ...string) *SelectBuilder {
 	sb := Select(col...)
 	isb.sbHolder = isb.args.Add(sb)
@@ -116,20 +104,16 @@ func (ib *InsertBuilder) Values(value ...any) *InsertBuilder {
 	return ib
 }
 
-// Returning sets returning columns.
-// For DBMS that doesn't support RETURNING, e.g. MySQL, it will be ignored.
 func (ib *InsertBuilder) Returning(col ...string) *InsertBuilder {
 	ib.returning = col
 	ib.marker = insertMarkerAfterReturning
 	return ib
 }
 
-// NumValue returns the number of values to insert.
 func (ib *InsertBuilder) NumValue() int {
 	return len(ib.values)
 }
 
-// String returns the compiled INSERT string.
 func (ib *InsertBuilder) String() string {
 	s, _ := ib.Build()
 	return s
@@ -141,6 +125,12 @@ func (ib *InsertBuilder) Build() (sql string, args []any) {
 
 func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
+	if len(ib.values) > 1 && len(ib.values) <= maxInsertPreallocationRows && (ib.sbHolder == "" || ib.args.Flavor == Oracle) {
+		if size := ib.estimateSQLSize(); size <= maxCompileBufferCapacity {
+			buf.Grow(size)
+		}
+	}
+
 	ib.injection.WriteTo(buf, insertMarkerInit)
 
 	if len(ib.values) > 1 && ib.args.Flavor == Oracle {
@@ -203,7 +193,9 @@ func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql 
 		buf.WriteString(ib.sbHolder)
 
 		ib.injection.WriteTo(buf, insertMarkerAfterSelect)
-	} else if len(ib.values) > 0 {
+	}
+
+	if ib.sbHolder == "" && len(ib.values) > 0 {
 		buf.WriteLeadingString("VALUES ")
 		for i, v := range ib.values {
 			if i > 0 {
@@ -228,6 +220,44 @@ func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql 
 	return ib.args.CompileWithFlavor(buf.String(), flavor, initialArg...)
 }
 
+func (ib *InsertBuilder) estimateSQLSize() int {
+	header := len(" VALUES ")
+	if len(ib.table) > 0 {
+		header += len(" INTO ") + len(ib.table)
+	}
+
+	if len(ib.cols) > 0 {
+		header += 3
+		count := 0
+		for _, col := range ib.cols {
+			if col == "" {
+				continue
+			}
+
+			if count > 0 {
+				header += 2
+			}
+
+			header += len(col)
+			count++
+		}
+	}
+
+	size := len(ib.verb) + header + 2*(len(ib.values)-1)
+	if ib.args.Flavor == Oracle {
+		size = len(ib.verb) + len(" ALL") + len(" SELECT 1 from DUAL") + len(ib.values)*header
+	}
+
+	for _, row := range ib.values {
+		size += 2 + 2*max(0, len(row)-1)
+		for _, value := range row {
+			size += len(value)
+		}
+	}
+
+	return size
+}
+
 func writeInsertRow(buf *stringBuilder, values []string) {
 	buf.WriteString("(")
 
@@ -242,14 +272,12 @@ func writeInsertRow(buf *stringBuilder, values []string) {
 	buf.WriteString(")")
 }
 
-// SetFlavor sets the flavor of compiled sql.
 func (ib *InsertBuilder) SetFlavor(flavor Flavor) (old Flavor) {
 	old = ib.args.Flavor
 	ib.args.Flavor = flavor
 	return
 }
 
-// Flavor returns flavor of builder
 func (ib *InsertBuilder) Flavor() Flavor {
 	return ib.args.Flavor
 }
@@ -258,7 +286,6 @@ func (ib *InsertBuilder) Var(arg any) string {
 	return ib.args.Add(arg)
 }
 
-// SQL adds an arbitrary sql to current position.
 func (ib *InsertBuilder) SQL(sql string) *InsertBuilder {
 	ib.injection.SQL(ib.marker, sql)
 	return ib

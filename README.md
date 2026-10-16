@@ -32,7 +32,7 @@ This package is not restricted to any particular database driver and does not au
 
 ## Install
 
-Requires Go 1.26 or later.
+Requires Go 1.27 or later. Allocation and runtime measurements are documented in the [benchmark report](benchmarks/README.md).
 
 Install this package by executing the following command:
 

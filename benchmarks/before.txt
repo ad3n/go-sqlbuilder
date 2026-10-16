@@ -1,0 +1,310 @@
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  242416	       857.7 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  104185	      2253 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	    1002	    241511 ns/op	  576151 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     140	   1696388 ns/op	 3859653 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  308278	       826.1 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   92095	      2611 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     878	    269764 ns/op	  588406 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     129	   1850169 ns/op	 4112681 B/op	   24772 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  260953	       938.8 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   73971	      3265 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     723	    332621 ns/op	  735697 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	      99	   2367898 ns/op	 5558990 B/op	   24775 allocs/op
+BenchmarkScan/CompileLiteral                 	55005512	         3.967 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  710833	       359.2 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	 1000000	       295.4 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   22723	     10390 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1926	    123203 ns/op	  284533 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  835892	       375.5 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  944848	       323.5 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   17457	     13781 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1369	    165862 ns/op	  296852 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  542359	       434.7 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  854263	       323.1 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   12073	     19894 ns/op	   31914 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	     946	    232579 ns/op	  444216 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 4207164	        57.42 ns/op	      64 B/op	       1 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  337532	       754.9 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  106635	      2254 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	    1021	    230642 ns/op	  576151 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     136	   1761765 ns/op	 3859708 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  291565	       829.6 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   92168	      2647 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     865	    272236 ns/op	  588406 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     129	   1838576 ns/op	 4109635 B/op	   24772 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  260131	       934.4 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   72415	      3249 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     721	    329631 ns/op	  735697 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	      99	   2451995 ns/op	 5555008 B/op	   24774 allocs/op
+BenchmarkScan/CompileLiteral                 	54313842	         3.917 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  753907	       360.7 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	 1000000	       296.0 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   23263	     10369 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1894	    123019 ns/op	  284534 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  824990	       384.7 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  891621	       327.7 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   17277	     13784 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1482	    165241 ns/op	  296849 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  510112	       439.5 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  867862	       324.1 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   10000	     20171 ns/op	   31915 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	     942	    230948 ns/op	  444217 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 4081954	        59.03 ns/op	      64 B/op	       1 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  327770	       752.1 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  103110	      2306 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	     986	    232691 ns/op	  576152 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     124	   1872754 ns/op	 3860949 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  313326	       819.9 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   94658	      2615 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     884	    267978 ns/op	  588406 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     132	   1831784 ns/op	 4198804 B/op	   24779 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  261297	       926.8 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   72739	      3270 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     728	    333570 ns/op	  735874 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	     100	   2433056 ns/op	 5550726 B/op	   24774 allocs/op
+BenchmarkScan/CompileLiteral                 	54274464	         3.959 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  688102	       365.5 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	  886126	       299.7 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   22174	     10691 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1965	    120771 ns/op	  284533 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  849559	       374.7 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  925519	       322.2 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   17782	     13487 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1479	    164630 ns/op	  296849 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  537148	       440.1 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  926239	       326.4 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   10000	     20083 ns/op	   31915 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	    1000	    228684 ns/op	  444210 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 4084824	        59.55 ns/op	      64 B/op	       1 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  322358	       753.0 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  106510	      2249 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	     898	    232459 ns/op	  576154 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     139	   1719188 ns/op	 3858725 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  308581	       839.9 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   91323	      2655 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     908	    270243 ns/op	  588407 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     132	   1836694 ns/op	 4155142 B/op	   24775 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  252632	       956.7 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   71473	      3330 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     718	    350129 ns/op	  735878 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	      96	   2440001 ns/op	 5554725 B/op	   24775 allocs/op
+BenchmarkScan/CompileLiteral                 	57295645	         4.013 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  690139	       364.4 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	 1000000	       294.9 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   23308	     10354 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1897	    124449 ns/op	  284533 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  792476	       376.2 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  923874	       322.4 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   17565	     13598 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1494	    164160 ns/op	  296848 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  484480	       438.3 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  914523	       324.1 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   12030	     20014 ns/op	   31914 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	     991	    231102 ns/op	  444211 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 4010287	        59.20 ns/op	      64 B/op	       1 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  326930	       767.4 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  103404	      2298 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	    1036	    233479 ns/op	  576150 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     140	   1703668 ns/op	 3860587 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  304195	       838.4 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   89402	      2739 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     880	    272159 ns/op	  588407 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     134	   1776219 ns/op	 4233549 B/op	   24781 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  261919	       933.1 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   73112	      3272 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     733	    326012 ns/op	  735696 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	     100	   2408738 ns/op	 5554672 B/op	   24775 allocs/op
+BenchmarkScan/CompileLiteral                 	55048623	         3.896 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  760891	       365.3 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	 1000000	       296.9 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   23355	     10204 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1870	    123634 ns/op	  284533 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  815725	       374.7 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  886028	       327.0 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   17138	     13891 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1431	    166148 ns/op	  296850 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  517521	       449.1 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  911686	       325.8 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   10000	     20117 ns/op	   31915 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	     930	    231769 ns/op	  444218 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 4163858	        57.91 ns/op	      64 B/op	       1 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  344667	       742.2 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  105187	      2255 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	    1051	    227069 ns/op	  576150 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     136	   1742833 ns/op	 3859708 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  312115	       825.1 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   91778	      2783 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     886	    269744 ns/op	  588407 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     132	   1803441 ns/op	 4233534 B/op	   24781 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  260107	       959.1 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   73180	      3305 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     704	    332924 ns/op	  735697 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	      93	   2387557 ns/op	 5558648 B/op	   24775 allocs/op
+BenchmarkScan/CompileLiteral                 	55108652	         4.456 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  727921	       365.3 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	  898814	       300.3 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   22935	     10570 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1910	    122265 ns/op	  284533 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  784431	       382.2 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  866341	       329.6 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   17318	     13833 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1428	    166473 ns/op	  296850 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  502995	       440.0 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  880834	       323.4 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   10000	     20318 ns/op	   31915 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	     933	    239912 ns/op	  444217 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 4130588	        58.88 ns/op	      64 B/op	       1 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  311925	       754.5 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  105925	      2271 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	     944	    230593 ns/op	  576153 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     138	   1724096 ns/op	 3859680 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  309896	       827.8 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   91411	      2651 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     904	    265213 ns/op	  588407 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     134	   1789355 ns/op	 4233549 B/op	   24781 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  257612	       947.2 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   74250	      3271 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     728	    331119 ns/op	  735697 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	      94	   2403378 ns/op	 5558243 B/op	   24775 allocs/op
+BenchmarkScan/CompileLiteral                 	55062667	         4.439 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  675876	       371.7 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	  998448	       298.1 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   22857	     10429 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1988	    121487 ns/op	  284533 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  773952	       386.7 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  887700	       325.7 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   17228	     13804 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1360	    164574 ns/op	  296852 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  542950	       435.6 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  852212	       320.7 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   10000	     20110 ns/op	   31915 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	     975	    235484 ns/op	  444212 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 4103709	        58.19 ns/op	      64 B/op	       1 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  319488	       754.6 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  106326	      2281 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	    1015	    251086 ns/op	  576148 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     134	   1781864 ns/op	 3858760 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  309811	       867.4 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   83733	      2778 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     870	    272757 ns/op	  588406 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     128	   1852152 ns/op	 4212014 B/op	   24780 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  265369	       929.4 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   71571	      3276 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     728	    331522 ns/op	  735697 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	     100	   2429996 ns/op	 5555985 B/op	   24775 allocs/op
+BenchmarkScan/CompileLiteral                 	54961839	         3.883 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  569155	       368.1 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	  978577	       298.2 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   22610	     10490 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1898	    120682 ns/op	  284534 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  730610	       380.2 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  916282	       327.8 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   16986	     14077 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1429	    164627 ns/op	  296851 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  515296	       455.2 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  956678	       325.5 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   10000	     20339 ns/op	   31915 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	    1036	    229169 ns/op	  444206 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 4093975	        63.84 ns/op	      64 B/op	       1 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  332536	       774.3 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  105690	      2296 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	    1034	    224909 ns/op	  576150 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     140	   1703358 ns/op	 3859653 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  311724	       840.7 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   92197	      2646 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     859	    266113 ns/op	  588407 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     132	   1808996 ns/op	 4233534 B/op	   24781 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  231608	       943.5 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   73112	      3263 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     726	    326463 ns/op	  735696 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	      99	   2371775 ns/op	 5548394 B/op	   24774 allocs/op
+BenchmarkScan/CompileLiteral                 	55191559	         4.400 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  718350	       364.9 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	  992101	       295.7 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   23815	     10187 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1988	    121056 ns/op	  284533 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  750518	       385.6 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  901948	       326.8 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   16700	     14281 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1377	    166695 ns/op	  296852 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  542018	       442.4 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  937996	       323.1 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   10000	     20393 ns/op	   31915 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	     982	    233683 ns/op	  444212 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 4006749	        60.18 ns/op	      64 B/op	       1 allocs/op
+PASS
+goos: linux
+goarch: amd64
+pkg: github.com/ad3n/go-sqlbuilder
+cpu: AMD Ryzen AI 9 HX 375 w/ Radeon 890M           
+BenchmarkInsertLifecycle/MySQL/Rows2         	  329487	       772.0 ns/op	    1024 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows10        	  105538	      2264 ns/op	    4192 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows1000      	     997	    235571 ns/op	  576151 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/MySQL/Rows5000      	     139	   1714394 ns/op	 3859666 B/op	   24770 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows2    	  313233	       832.2 ns/op	    1040 B/op	      22 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows10   	   87884	      2643 ns/op	    4240 B/op	      39 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows1000 	     886	    263883 ns/op	  588406 B/op	    4744 allocs/op
+BenchmarkInsertLifecycle/PostgreSQL/Rows5000 	     129	   1850533 ns/op	 4112681 B/op	   24772 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows2        	  259893	       965.9 ns/op	    1280 B/op	      23 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows10       	   72710	      3293 ns/op	    5584 B/op	      40 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows1000     	     720	    332766 ns/op	  735697 B/op	    4742 allocs/op
+BenchmarkInsertLifecycle/Oracle/Rows5000     	     100	   2456385 ns/op	 5555982 B/op	   24775 allocs/op
+BenchmarkScan/CompileLiteral                 	51204696	         4.564 ns/op	       0 B/op	       0 allocs/op
+BenchmarkScan/MySQL/SelectBuild              	  602875	       364.7 ns/op	     256 B/op	      10 allocs/op
+BenchmarkScan/MySQL/Insert1                  	 1000000	       297.3 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/MySQL/Insert100                	   23184	     10435 ns/op	   16600 B/op	      20 allocs/op
+BenchmarkScan/MySQL/Insert1000               	    1903	    120823 ns/op	  284533 B/op	      34 allocs/op
+BenchmarkScan/PostgreSQL/SelectBuild         	  823980	       378.4 ns/op	     264 B/op	      10 allocs/op
+BenchmarkScan/PostgreSQL/Insert1             	  911454	       327.1 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/PostgreSQL/Insert100           	   17455	     13752 ns/op	   17497 B/op	      20 allocs/op
+BenchmarkScan/PostgreSQL/Insert1000          	    1477	    163724 ns/op	  296849 B/op	      34 allocs/op
+BenchmarkScan/Oracle/SelectBuild             	  540595	       447.6 ns/op	     424 B/op	      11 allocs/op
+BenchmarkScan/Oracle/Insert1                 	  910802	       325.7 ns/op	     312 B/op	       8 allocs/op
+BenchmarkScan/Oracle/Insert100               	   10000	     20184 ns/op	   31915 B/op	      21 allocs/op
+BenchmarkScan/Oracle/Insert1000              	     950	    232775 ns/op	  444216 B/op	      32 allocs/op
+BenchmarkScan/Prefix                         	 3989798	        59.84 ns/op	      64 B/op	       1 allocs/op
+PASS
