@@ -572,39 +572,36 @@ func encodeValue(buf []byte, arg any, flavor Flavor) ([]byte, error) {
 			break
 		}
 
-		// Round to the digits this literal keeps. Adding half a unit and then
-		// formatting truncates the rest. SQLite and Presto print milliseconds,
-		// so half a millisecond is the cutoff. 12:23:34.9995 was printed as
-		// 12:23:34.999.
 		round := 500 * time.Nanosecond
 		switch flavor {
 		case SQLite, Presto:
 			round = 500 * time.Microsecond
 		}
+
 		v = v.Add(round)
 
 		switch flavor {
 		case MySQL, ClickHouse, Informix, Doris:
-			buf = append(buf, v.Format("'2006-01-02 15:04:05.999999'")...)
+			buf = v.AppendFormat(buf, "'2006-01-02 15:04:05.999999'")
 
 		case PostgreSQL:
-			buf = append(buf, v.Format("'2006-01-02 15:04:05.999999 MST'")...)
+			buf = v.AppendFormat(buf, "'2006-01-02 15:04:05.999999 MST'")
 
 		case SQLite:
-			buf = append(buf, v.Format("'2006-01-02 15:04:05.000'")...)
+			buf = v.AppendFormat(buf, "'2006-01-02 15:04:05.000'")
 
 		case SQLServer:
-			buf = append(buf, v.Format("'2006-01-02 15:04:05.999999 Z07:00'")...)
+			buf = v.AppendFormat(buf, "'2006-01-02 15:04:05.999999 Z07:00'")
 
 		case CQL:
-			buf = append(buf, v.Format("'2006-01-02 15:04:05.999999Z0700'")...)
+			buf = v.AppendFormat(buf, "'2006-01-02 15:04:05.999999Z0700'")
 
 		case Presto:
-			buf = append(buf, v.Format("'2006-01-02 15:04:05.000'")...)
+			buf = v.AppendFormat(buf, "'2006-01-02 15:04:05.000'")
 
 		case Oracle:
 			buf = append(buf, "to_timestamp('"...)
-			buf = append(buf, v.Format("2006-01-02 15:04:05.999999")...)
+			buf = v.AppendFormat(buf, "2006-01-02 15:04:05.999999")
 			buf = append(buf, "', 'YYYY-MM-DD HH24:MI:SS.FF')"...)
 		}
 

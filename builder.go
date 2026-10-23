@@ -7,16 +7,23 @@ import (
 	"fmt"
 )
 
-type Builder interface {
-	Build() (sql string, args []any)
-	BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any)
-	Flavor() Flavor
-}
+type (
+	Builder interface {
+		Build() (sql string, args []any)
+		BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any)
+		Flavor() Flavor
+	}
 
-type compiledBuilder struct {
-	args   *Args
-	format string
-}
+	compiledBuilder struct {
+		args   *Args
+		format string
+	}
+
+	flavoredBuilder struct {
+		builder Builder
+		flavor  Flavor
+	}
+)
 
 var _ Builder = new(compiledBuilder)
 
@@ -28,15 +35,8 @@ func (cb *compiledBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sq
 	return cb.args.CompileWithFlavor(cb.format, flavor, initialArg...)
 }
 
-// Flavor returns flavor of builder
-// Always returns DefaultFlavor
 func (cb *compiledBuilder) Flavor() Flavor {
 	return cb.args.Flavor
-}
-
-type flavoredBuilder struct {
-	builder Builder
-	flavor  Flavor
 }
 
 func (fb *flavoredBuilder) Build() (sql string, args []any) {
@@ -47,12 +47,10 @@ func (fb *flavoredBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sq
 	return fb.builder.BuildWithFlavor(flavor, initialArg...)
 }
 
-// Flavor returns flavor of builder
 func (fb *flavoredBuilder) Flavor() Flavor {
 	return fb.flavor
 }
 
-// WithFlavor creates a new Builder based on builder with a default flavor.
 func WithFlavor(builder Builder, flavor Flavor) Builder {
 	return &flavoredBuilder{
 		builder: builder,
@@ -64,6 +62,10 @@ func Buildf(format string, arg ...any) Builder {
 	args := &Args{
 		Flavor: DefaultFlavor,
 	}
+	if len(arg) > 0 {
+		args.argValues = &valueStore{Values: make([]any, 0, len(arg))}
+	}
+
 	vars := make([]any, 0, len(arg))
 
 	for _, a := range arg {
@@ -81,8 +83,12 @@ func Build(format string, arg ...any) Builder {
 		Flavor: DefaultFlavor,
 	}
 
+	if len(arg) > 0 {
+		args.argValues = &valueStore{Values: make([]any, 0, len(arg))}
+	}
+
 	for _, a := range arg {
-		args.Add(a)
+		args.add(a)
 	}
 
 	return &compiledBuilder{
@@ -97,8 +103,19 @@ func BuildNamed(format string, named map[string]any) Builder {
 		onlyNamed: true,
 	}
 
+	if len(named) > 0 {
+		args.argValues = &valueStore{Values: make([]any, 0, len(named))}
+		args.namedArgs = make(map[string]int, len(named))
+	}
+
 	for n, v := range named {
-		args.Add(Named(n, v))
+		if index, ok := args.namedArgs[n]; ok {
+			args.argValues.Add(args.argValues.Load(index))
+			continue
+		}
+
+		index := args.add(v)
+		args.namedArgs[n] = index
 	}
 
 	return &compiledBuilder{

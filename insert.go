@@ -3,7 +3,12 @@
 
 package sqlbuilder
 
-import "github.com/huandu/go-clone"
+import (
+	"slices"
+	"strconv"
+
+	"github.com/huandu/go-clone"
+)
 
 const (
 	insertMarkerInit injectionMarker = iota
@@ -14,24 +19,11 @@ const (
 	insertMarkerAfterReturning
 )
 
-const maxInsertPreallocationRows = 1024
-
-func NewInsertBuilder() *InsertBuilder {
-	return DefaultFlavor.NewInsertBuilder()
-}
-
-func newInsertBuilder() *InsertBuilder {
-	args := &Args{}
-	return &InsertBuilder{
-		verb:      "INSERT",
-		args:      args,
-		injection: newInjection(),
-	}
-}
-
-func (ib *InsertBuilder) Clone() *InsertBuilder {
-	return clone.Clone(ib).(*InsertBuilder)
-}
+const (
+	maxInsertPreallocationRows          = 1024
+	maxMySQLInsertPreallocationRows     = 16 << 10
+	maxMySQLInsertPreallocationCapacity = 1 << 20
+)
 
 type InsertBuilder struct {
 	verb      string
@@ -49,6 +41,23 @@ type InsertBuilder struct {
 }
 
 var _ Builder = new(InsertBuilder)
+
+func NewInsertBuilder() *InsertBuilder {
+	return DefaultFlavor.NewInsertBuilder()
+}
+
+func newInsertBuilder() *InsertBuilder {
+	args := &Args{}
+	return &InsertBuilder{
+		verb:      "INSERT",
+		args:      args,
+		injection: newInjection(),
+	}
+}
+
+func (ib *InsertBuilder) Clone() *InsertBuilder {
+	return clone.Clone(ib).(*InsertBuilder)
+}
 
 func InsertInto(table string) *InsertBuilder {
 	return DefaultFlavor.NewInsertBuilder().InsertInto(table)
@@ -93,15 +102,61 @@ func (isb *InsertBuilder) Select(col ...string) *SelectBuilder {
 }
 
 func (ib *InsertBuilder) Values(value ...any) *InsertBuilder {
-	placeholders := make([]string, 0, len(value))
+	if len(ib.values) >= maxInsertPreallocationRows {
+		if len(ib.values) == cap(ib.values) {
+			ib.values = slices.Grow(ib.values, cap(ib.values))
+		}
 
-	for _, v := range value {
-		placeholders = append(placeholders, ib.args.Add(v))
+		if store := ib.args.argValues; store != nil && cap(store.Values)-len(store.Values) < len(value) {
+			store.Values = slices.Grow(store.Values, max(len(value), cap(store.Values)))
+		}
+	}
+
+	placeholders := make([]string, len(value))
+	switch {
+	case len(value) <= 1 || ib.args.argValues.Len()+ib.args.indexBase+len(value) <= maxPredefinedArgs:
+		for i, v := range value {
+			placeholders[i] = ib.args.Add(v)
+		}
+	default:
+		fillInsertPlaceholders(ib.args, value, placeholders)
 	}
 
 	ib.values = append(ib.values, placeholders)
 	ib.marker = insertMarkerAfterValues
 	return ib
+}
+
+func fillInsertPlaceholders(args *Args, values []any, placeholders []string) {
+	var scratch [32 * 21]byte
+	var ends [32]int
+	for start := 0; start < len(values); start += len(ends) {
+		batch := values[start:min(start+len(ends), len(values))]
+		data := scratch[:0]
+		for i, v := range batch {
+			index := args.add(v)
+			if index < maxPredefinedArgs {
+				placeholders[start+i] = predefinedArgs[index]
+				ends[i] = 0
+				continue
+			}
+
+			data = append(data, '$')
+			data = strconv.AppendInt(data, int64(index), 10)
+			ends[i] = len(data)
+		}
+
+		text := string(data)
+		offset := 0
+		for i := range batch {
+			if ends[i] == 0 {
+				continue
+			}
+
+			placeholders[start+i] = text[offset:ends[i]]
+			offset = ends[i]
+		}
+	}
 }
 
 func (ib *InsertBuilder) Returning(col ...string) *InsertBuilder {
@@ -125,8 +180,13 @@ func (ib *InsertBuilder) Build() (sql string, args []any) {
 
 func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
-	if len(ib.values) > 1 && len(ib.values) <= maxInsertPreallocationRows && (ib.sbHolder == "" || ib.args.Flavor == Oracle) {
-		if size := ib.estimateSQLSize(); size <= maxCompileBufferCapacity {
+	maxRows, maxCapacity := maxInsertPreallocationRows, maxCompileBufferCapacity
+	if flavor == MySQL && ib.args.Flavor != Oracle {
+		maxRows, maxCapacity = maxMySQLInsertPreallocationRows, maxMySQLInsertPreallocationCapacity
+	}
+
+	if len(ib.values) > 1 && len(ib.values) <= maxRows && (ib.sbHolder == "" || ib.args.Flavor == Oracle) {
+		if size := ib.estimateSQLSize(); size <= maxCapacity {
 			buf.Grow(size)
 		}
 	}
