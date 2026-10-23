@@ -8,11 +8,26 @@ import (
 	"strings"
 )
 
+type (
+	rawArgs struct {
+		expr string
+	}
+
+	listArgs struct {
+		args    []any
+		isTuple bool
+	}
+
+	namedArgs struct {
+		name string
+		arg  any
+	}
+)
+
 func Escape(ident string) string {
 	return strings.ReplaceAll(ident, "$", "$$")
 }
 
-// EscapeAll replaces `$` with `$$` in all strings of ident.
 func EscapeAll(ident ...string) []string {
 	escaped := make([]string, 0, len(ident))
 
@@ -24,17 +39,10 @@ func EscapeAll(ident ...string) []string {
 }
 
 func Flatten(slices any) (flattened []any) {
-	v := reflect.ValueOf(slices)
-	slices, flattened = flatten(v)
-
-	if slices != nil {
-		return []any{slices}
-	}
-
-	return flattened
+	return flatten(reflect.ValueOf(slices), nil)
 }
 
-func flatten(v reflect.Value) (elem any, flattened []any) {
+func flatten(v reflect.Value, flattened []any) []any {
 	k := v.Kind()
 
 	for k == reflect.Interface {
@@ -44,40 +52,25 @@ func flatten(v reflect.Value) (elem any, flattened []any) {
 
 	if k != reflect.Slice && k != reflect.Array {
 		if !v.IsValid() {
-			return nil, []interface{}{nil}
-		}
-		if !v.CanInterface() {
-			return
+			return append(flattened, nil)
 		}
 
-		elem = v.Interface()
-		return elem, nil
+		if !v.CanInterface() {
+			return flattened
+		}
+
+		return append(flattened, v.Interface())
 	}
 
 	for i, l := 0, v.Len(); i < l; i++ {
-		e, f := flatten(v.Index(i))
-
-		if e == nil {
-			flattened = append(flattened, f...)
-		} else {
-			flattened = append(flattened, e)
-		}
+		flattened = flatten(v.Index(i), flattened)
 	}
 
-	return
-}
-
-type rawArgs struct {
-	expr string
+	return flattened
 }
 
 func Raw(expr string) any {
 	return rawArgs{expr}
-}
-
-type listArgs struct {
-	args    []any
-	isTuple bool
 }
 
 func List(arg any) any {
@@ -93,20 +86,29 @@ func Tuple(values ...any) any {
 	}
 }
 
-// TupleNames joins names with tuple format.
-// The names is not escaped. Use `EscapeAll` to escape them if necessary.
 func TupleNames(names ...string) string {
+	size, count := 2, 0
+	for _, name := range names {
+		if name == "" {
+			continue
+		}
+
+		size += len(name)
+		count++
+	}
+
+	if count == 0 {
+		return "()"
+	}
+
 	buf := newStringBuilder()
+
+	buf.Grow(size + (count-1)*2)
 	buf.WriteRune('(')
 	buf.WriteStrings(names, ", ")
 	buf.WriteRune(')')
 
 	return buf.String()
-}
-
-type namedArgs struct {
-	name string
-	arg  any
 }
 
 func Named(name string, arg any) any {
