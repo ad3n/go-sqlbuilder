@@ -31,10 +31,8 @@ func newCTEBuilder() *CTEBuilder {
 	}
 }
 
-// Clone returns a deep copy of CTEBuilder.
-// It's useful when you want to create a base builder and clone it to build similar queries.
 func (cteb *CTEBuilder) Clone() *CTEBuilder {
-	return clone.Clone(cteb).(*CTEBuilder)
+	return cloneWithGC(cteb).(*CTEBuilder)
 }
 
 func init() {

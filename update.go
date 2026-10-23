@@ -42,10 +42,8 @@ func newUpdateBuilder() *UpdateBuilder {
 	}
 }
 
-// Clone returns a deep copy of UpdateBuilder.
-// It's useful when you want to create a base builder and clone it to build similar queries.
 func (ub *UpdateBuilder) Clone() *UpdateBuilder {
-	return clone.Clone(ub).(*UpdateBuilder)
+	return cloneWithGC(ub).(*UpdateBuilder)
 }
 
 func init() {

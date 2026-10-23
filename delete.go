@@ -40,10 +40,8 @@ func newDeleteBuilder() *DeleteBuilder {
 	}
 }
 
-// Clone returns a deep copy of DeleteBuilder.
-// It's useful when you want to create a base builder and clone it to build similar queries.
 func (db *DeleteBuilder) Clone() *DeleteBuilder {
-	return clone.Clone(db).(*DeleteBuilder)
+	return cloneWithGC(db).(*DeleteBuilder)
 }
 
 func init() {

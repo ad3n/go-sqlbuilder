@@ -57,10 +57,8 @@ func newSelectBuilder() *SelectBuilder {
 	}
 }
 
-// Clone returns a deep copy of SelectBuilder.
-// It's useful when you want to create a base builder and clone it to build similar queries.
 func (sb *SelectBuilder) Clone() *SelectBuilder {
-	return clone.Clone(sb).(*SelectBuilder)
+	return cloneWithGC(sb).(*SelectBuilder)
 }
 
 func init() {

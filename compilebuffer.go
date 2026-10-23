@@ -6,11 +6,15 @@ import (
 	"unicode/utf8"
 )
 
-const maxCompileBufferCapacity = 64 << 10
+const (
+	maxCompileBufferCapacity     = 64 << 10
+	maxCompileBufferHintCapacity = 1 << 20
+)
 
 type compileBuffer struct {
-	large strings.Builder
-	data  []byte
+	large        strings.Builder
+	data         []byte
+	capacityHint int
 }
 
 func (buf *compileBuffer) WriteString(s string) {
@@ -20,7 +24,7 @@ func (buf *compileBuffer) WriteString(s string) {
 	}
 
 	if len(s)+len(buf.data) > maxCompileBufferCapacity {
-		buf.large.Grow(len(buf.data) + len(s))
+		buf.large.Grow(max(len(buf.data)+len(s), buf.capacityHint))
 		buf.large.Write(buf.data)
 		buf.large.WriteString(s)
 		buf.data = buf.data[:0]
@@ -78,6 +82,7 @@ func (buf *compileBuffer) Cap() int {
 
 func (buf *compileBuffer) Reset() {
 	buf.large.Reset()
+	buf.capacityHint = 0
 	if cap(buf.data) > maxCompileBufferCapacity {
 		buf.data = nil
 		return

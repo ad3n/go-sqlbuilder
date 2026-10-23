@@ -6,8 +6,6 @@ package sqlbuilder
 import (
 	"slices"
 	"strconv"
-
-	"github.com/huandu/go-clone"
 )
 
 const (
@@ -20,9 +18,11 @@ const (
 )
 
 const (
-	maxInsertPreallocationRows          = 1024
-	maxMySQLInsertPreallocationRows     = 16 << 10
-	maxMySQLInsertPreallocationCapacity = 1 << 20
+	maxInsertCachedColumns             = 8
+	maxInsertPlaceholderBlock          = 255
+	maxInsertPreallocationRows         = 1024
+	maxBulkInsertPreallocationRows     = 16 << 10
+	maxBulkInsertPreallocationCapacity = 1 << 20
 )
 
 type InsertBuilder struct {
@@ -56,7 +56,36 @@ func newInsertBuilder() *InsertBuilder {
 }
 
 func (ib *InsertBuilder) Clone() *InsertBuilder {
-	return clone.Clone(ib).(*InsertBuilder)
+	if ib == nil {
+		return nil
+	}
+
+	source := *ib
+	source.values = nil
+	result := cloneWithGC(&source).(*InsertBuilder)
+	if ib.values == nil {
+		return result
+	}
+
+	result.values = make([][]string, len(ib.values), cap(ib.values))
+	count := 0
+	for _, row := range ib.values {
+		count += len(row)
+	}
+
+	placeholders := make([]string, count)
+	for i, row := range ib.values {
+		if row == nil {
+			continue
+		}
+
+		n := len(row)
+		result.values[i] = placeholders[:n:n]
+		copy(result.values[i], row)
+		placeholders = placeholders[n:]
+	}
+
+	return result
 }
 
 func InsertInto(table string) *InsertBuilder {
@@ -112,19 +141,63 @@ func (ib *InsertBuilder) Values(value ...any) *InsertBuilder {
 		}
 	}
 
-	placeholders := make([]string, len(value))
+	var placeholders []string
+	index := ib.args.argValues.Len() + ib.args.indexBase
 	switch {
-	case len(value) <= 1 || ib.args.argValues.Len()+ib.args.indexBase+len(value) <= maxPredefinedArgs:
-		for i, v := range value {
-			placeholders[i] = ib.args.Add(v)
+	case index >= 0 && len(value) <= maxInsertCachedColumns:
+		placeholders = ib.placeholderBlock(index, len(value))
+		for _, v := range value {
+			ib.args.add(v)
 		}
 	default:
+		placeholders = make([]string, len(value))
 		fillInsertPlaceholders(ib.args, value, placeholders)
 	}
 
 	ib.values = append(ib.values, placeholders)
 	ib.marker = insertMarkerAfterValues
 	return ib
+}
+
+func (ib *InsertBuilder) placeholderBlock(index, count int) []string {
+	if index <= maxPredefinedArgs && count <= maxPredefinedArgs-index {
+		return predefinedArgs[index : index+count]
+	}
+
+	if len(ib.values) > 0 {
+		previous := ib.values[len(ib.values)-1]
+		tail := previous[len(previous):cap(previous)]
+		if len(tail) > 0 && len(tail[0]) > 1 {
+			first, _ := strconv.Atoi(tail[0][1:])
+			offset := index - first
+			if offset >= 0 && offset <= len(tail) && count <= len(tail)-offset {
+				return tail[offset : offset+count]
+			}
+		}
+	}
+
+	if count == 0 {
+		return []string{}
+	}
+
+	var scratch [maxInsertPlaceholderBlock * 21]byte
+	var ends [maxInsertPlaceholderBlock]int
+	data := scratch[:0]
+	for i := range ends {
+		data = append(data, '$')
+		data = strconv.AppendInt(data, int64(index+i), 10)
+		ends[i] = len(data)
+	}
+
+	text := string(data)
+	block := make([]string, maxInsertPlaceholderBlock)
+	offset := 0
+	for i, end := range ends {
+		block[i] = text[offset:end]
+		offset = end
+	}
+
+	return block[:count]
 }
 
 func fillInsertPlaceholders(args *Args, values []any, placeholders []string) {
@@ -181,8 +254,8 @@ func (ib *InsertBuilder) Build() (sql string, args []any) {
 func (ib *InsertBuilder) BuildWithFlavor(flavor Flavor, initialArg ...any) (sql string, args []any) {
 	buf := newStringBuilder()
 	maxRows, maxCapacity := maxInsertPreallocationRows, maxCompileBufferCapacity
-	if flavor == MySQL && ib.args.Flavor != Oracle {
-		maxRows, maxCapacity = maxMySQLInsertPreallocationRows, maxMySQLInsertPreallocationCapacity
+	if flavor == MySQL && ib.args.Flavor != Oracle || flavor == PostgreSQL || flavor == Oracle {
+		maxRows, maxCapacity = maxBulkInsertPreallocationRows, maxBulkInsertPreallocationCapacity
 	}
 
 	if len(ib.values) > 1 && len(ib.values) <= maxRows && (ib.sbHolder == "" || ib.args.Flavor == Oracle) {

@@ -15,15 +15,44 @@ import (
 	"github.com/huandu/go-clone"
 )
 
-type Args struct {
-	Flavor Flavor
+const (
+	maxPredefinedArgs           = 64
+	maxCompileNamedArgsCapacity = 64
+)
 
-	indexBase    int
-	argValues    *valueStore
-	namedArgs    map[string]int
-	sqlNamedArgs map[string]int
-	onlyNamed    bool
-}
+type (
+	Args struct {
+		Flavor Flavor
+
+		indexBase    int
+		argValues    *valueStore
+		namedArgs    map[string]int
+		sqlNamedArgs map[string]int
+		onlyNamed    bool
+	}
+
+	argsCompileContext struct {
+		compileBuffer
+
+		Values    []any
+		NamedArgs []sql.NamedArg
+
+		Flavor Flavor
+	}
+
+	valueStore struct {
+		Values []any
+	}
+)
+
+var (
+	predefinedArgs         []string
+	argsCompileContextPool = sync.Pool{
+		New: func() any {
+			return new(argsCompileContext{compileBuffer: compileBuffer{data: make([]byte, 0, 64)}})
+		},
+	}
+)
 
 func init() {
 	predefinedArgs = make([]string, 0, maxPredefinedArgs)
@@ -32,10 +61,6 @@ func init() {
 		predefinedArgs = append(predefinedArgs, fmt.Sprintf("$%v", i))
 	}
 }
-
-const maxPredefinedArgs = 64
-
-var predefinedArgs []string
 
 func (args *Args) Add(arg any) string {
 	idx := args.add(arg)
@@ -119,6 +144,10 @@ func (args *Args) CompileWithFlavor(format string, flavor Flavor, initialValue .
 
 	if ctx.Flavor == invalidFlavor {
 		ctx.Flavor = DefaultFlavor
+	}
+
+	if (ctx.Flavor == PostgreSQL || ctx.Flavor == Oracle) && len(format) > maxCompileBufferCapacity && len(format) <= maxCompileBufferHintCapacity {
+		ctx.capacityHint = len(format)
 	}
 
 	for idx >= 0 && len(format) > 0 {
@@ -287,23 +316,6 @@ func parseNamedArgs(initialValue []any) (values []any, namedValues []sql.NamedAr
 	return
 }
 
-type argsCompileContext struct {
-	compileBuffer
-
-	Values    []any
-	NamedArgs []sql.NamedArg
-
-	Flavor Flavor
-}
-
-const maxCompileNamedArgsCapacity = 64
-
-var argsCompileContextPool = sync.Pool{
-	New: func() any {
-		return new(argsCompileContext{compileBuffer: compileBuffer{data: make([]byte, 0, 64)}})
-	},
-}
-
 func releaseArgsCompileContext(ctx *argsCompileContext) {
 	ctx.Reset()
 	ctx.Values = nil
@@ -388,10 +400,6 @@ func (ctx *argsCompileContext) WriteValues(values []any, sep string) {
 		ctx.WriteString(sep)
 		ctx.WriteValue(v)
 	}
-}
-
-type valueStore struct {
-	Values []any
 }
 
 func init() {

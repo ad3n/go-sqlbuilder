@@ -34,10 +34,8 @@ func newUnionBuilder() *UnionBuilder {
 	}
 }
 
-// Clone returns a deep copy of UnionBuilder.
-// It's useful when you want to create a base builder and clone it to build similar queries.
 func (ub *UnionBuilder) Clone() *UnionBuilder {
-	return clone.Clone(ub).(*UnionBuilder)
+	return cloneWithGC(ub).(*UnionBuilder)
 }
 
 func init() {
