@@ -264,7 +264,11 @@ func (args *Args) mergeSQLNamedArgs(ctx *argsCompileContext) []any {
 		}
 	}
 
-	ints := make([]int, 0, len(args.sqlNamedArgs))
+	var scratch [maxCompileNamedArgsCapacity]int
+	ints := scratch[:0]
+	if len(args.sqlNamedArgs) > len(scratch) {
+		ints = make([]int, 0, len(args.sqlNamedArgs))
+	}
 
 	for n, p := range args.sqlNamedArgs {
 		if _, ok := existingNames[n]; ok {
@@ -283,10 +287,9 @@ func (args *Args) mergeSQLNamedArgs(ctx *argsCompileContext) []any {
 	return values
 }
 
-func parseNamedArgs(initialValue []any) (values []any, namedValues []sql.NamedArg) {
+func parseNamedArgs(initialValue []any, namedValues []sql.NamedArg) ([]any, []sql.NamedArg) {
 	if len(initialValue) == 0 {
-		values = initialValue
-		return
+		return initialValue, namedValues
 	}
 
 	size := len(initialValue)
@@ -302,18 +305,16 @@ func parseNamedArgs(initialValue []any) (values []any, namedValues []sql.NamedAr
 	}
 
 	if i == size {
-		values = initialValue
-		return
+		return initialValue, namedValues
 	}
 
-	values = initialValue[:i]
-	namedValues = make([]sql.NamedArg, 0, size-i)
-
+	values := initialValue[:i]
+	namedValues = slices.Grow(namedValues, size-i)
 	for ; i < size; i++ {
 		namedValues = append(namedValues, initialValue[i].(sql.NamedArg))
 	}
 
-	return
+	return values, namedValues
 }
 
 func releaseArgsCompileContext(ctx *argsCompileContext) {
@@ -335,9 +336,7 @@ func (ctx *argsCompileContext) WriteValue(arg any) {
 		s, values := a.BuildWithFlavor(ctx.Flavor, ctx.Values...)
 		ctx.WriteString(s)
 
-		values, namedArgs := parseNamedArgs(values)
-		ctx.Values = values
-		ctx.NamedArgs = append(ctx.NamedArgs, namedArgs...)
+		ctx.Values, ctx.NamedArgs = parseNamedArgs(values, ctx.NamedArgs)
 
 	case sql.NamedArg:
 		ctx.WriteRune('@')
