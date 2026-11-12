@@ -762,16 +762,6 @@ func encodeValue(buf []byte, arg any, flavor Flavor) ([]byte, error) {
 	return buf, nil
 }
 
-var hexDigits = [16]byte{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'}
-
-func appendHex(buf, v []byte) []byte {
-	for _, b := range v {
-		buf = append(buf, hexDigits[(b>>4)&0xF], hexDigits[b&0xF])
-	}
-
-	return buf
-}
-
 func quoteStringValue(buf []byte, s string, flavor Flavor) []byte {
 	// These dialects follow the SQL standard for string literals. A backslash
 	// is an ordinary character, so quotes must be escaped by doubling them and

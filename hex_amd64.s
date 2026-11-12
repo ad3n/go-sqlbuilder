@@ -1,0 +1,51 @@
+//go:build !purego && !race
+
+#include "textflag.h"
+
+DATA mask<>+0(SB)/8, $0x0f0f0f0f0f0f0f0f
+DATA mask<>+8(SB)/8, $0x0f0f0f0f0f0f0f0f
+GLOBL mask<>(SB), RODATA|NOPTR, $16
+DATA nine<>+0(SB)/8, $0x0909090909090909
+DATA nine<>+8(SB)/8, $0x0909090909090909
+GLOBL nine<>(SB), RODATA|NOPTR, $16
+DATA seven<>+0(SB)/8, $0x0707070707070707
+DATA seven<>+8(SB)/8, $0x0707070707070707
+GLOBL seven<>(SB), RODATA|NOPTR, $16
+DATA zero<>+0(SB)/8, $0x3030303030303030
+DATA zero<>+8(SB)/8, $0x3030303030303030
+GLOBL zero<>(SB), RODATA|NOPTR, $16
+
+TEXT ·encodeHexBlocks(SB), NOSPLIT, $0-48
+ MOVQ dst_base+0(FP), DI
+ MOVQ src_base+24(FP), SI
+ MOVQ src_len+32(FP), CX
+ MOVOU mask<>(SB), X4
+ MOVOU nine<>(SB), X5
+ MOVOU seven<>(SB), X6
+ MOVOU zero<>(SB), X7
+loop:
+ MOVOU (SI), X0
+ MOVOU X0, X1
+ PSRLW $4, X1
+ PAND X4, X0
+ PAND X4, X1
+ MOVOU X0, X2
+ MOVOU X1, X3
+ PCMPGTB X5, X2
+ PCMPGTB X5, X3
+ PAND X6, X2
+ PAND X6, X3
+ PADDB X7, X0
+ PADDB X7, X1
+ PADDB X2, X0
+ PADDB X3, X1
+ MOVOU X1, X2
+ PUNPCKLBW X0, X1
+ PUNPCKHBW X0, X2
+ MOVOU X1, (DI)
+ MOVOU X2, 16(DI)
+ ADDQ $16, SI
+ ADDQ $32, DI
+ SUBQ $16, CX
+ JNZ loop
+ RET
